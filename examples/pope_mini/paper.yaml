@@ -1,0 +1,29 @@
+# POPE mini with InstructBLIP-13B, a model of the POPE paper, to compare with its published results.
+# It needs an NVIDIA card. Without one, open examples/pope_mini/colab.ipynb in Google Colab.
+# Fetch the data first:  python examples/pope_mini/fetch.py
+# Then:  vlmshift all examples/pope_mini/paper.yaml examples/pope_mini/analysis.yaml
+# And:   python examples/pope_mini/compare.py <path of report.md, printed on the last line>
+schema_version: 1
+data: data/pope_mini.csv
+workspace: ./workspace
+
+roles:
+  unit: image_id          # the 18 questions of one image are not independent
+
+axes:
+  mode: {type: observed}  # how the absent object was chosen: random, popular, adversarial
+
+task:
+  type: yes_no            # the POPE question is sent as it is: "Is there a <object> in the image?"
+
+# The model of the paper (Vicuna-13B inside), packaged by Salesforce for transformers.
+# The first run downloads 57 GB. In float16 it needs about 28 GB on the card.
+# A free T4 of Colab has 15 GB: `quantize: 4bit` makes it fit (pip install bitsandbytes),
+# with answers that can differ a little from the full model. On a card of 32 GB or more,
+# remove `params` to run the model as in the paper.
+models:
+  - name: instructblip-13b
+    adapter: huggingface
+    id: Salesforce/instructblip-vicuna-13b
+    revision: 91271ed4920607b735c9925dfa495de6d012d16d
+    params: {quantize: 4bit}

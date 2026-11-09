@@ -1,0 +1,1167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Documentation · VLMShift</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="VLMShift. A simple kit for measuring shift in vision-language models.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2032%2032%22%20role%3D%22img%22%20aria-label%3D%22VLMShift%20logo%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20%3E%3Cpath%20d%3D%22M15%2C4%20A10%2C10%200%200%200%2015%2C24%20Z%22%20fill%3D%22%233f7a5c%22/%3E%3Cpath%20d%3D%22M17%2C8%20A10%2C10%200%200%201%2017%2C28%20Z%22%20fill%3D%22%233f7a5c%22%20fill-opacity%3D%22.38%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="top"><a class="brand" href="index.html"><svg viewBox="0 0 32 32" role="img" aria-label="VLMShift logo" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M15,4 A10,10 0 0 0 15,24 Z" fill="var(--accent, #3f7a5c)"/><path d="M17,8 A10,10 0 0 1 17,28 Z" fill="var(--accent, #3f7a5c)" fill-opacity=".38"/></svg><span>VLMShift</span></a><nav aria-label="Site"><a href="tutorial.html">Tutorial</a><a href="files.html">File guide</a><a href="documentation.html" aria-current="page">Documentation</a></nav></header>
+<main class="reading">
+<h1 id="vlmshift-documentation">VLMShift documentation</h1>
+<p>Everything the tool can do, one topic at a time. New here? Start with the <a href="tutorial.html">tutorial</a>.</p>
+<p><strong>Contents</strong></p>
+<ol>
+<li><a href="#1-the-idea-in-one-minute">The idea in one minute</a></li>
+<li><a href="#2-words-to-know">Words to know</a></li>
+<li><a href="#3-your-data">Your data</a></li>
+<li><a href="#4-describing-an-experiment-experimentyaml">Describing an experiment</a></li>
+<li><a href="#5-models">Models</a></li>
+<li><a href="#6-reading-the-answers">Reading the answers</a></li>
+<li><a href="#7-commands">Commands</a></li>
+<li><a href="#8-describing-an-analysis-analysisyaml">Describing an analysis</a></li>
+<li><a href="#9-what-is-measured">What is measured</a></li>
+<li><a href="#10-the-latent-space-probe">The latent space probe</a></li>
+<li><a href="#11-what-the-tool-writes">What the tool writes</a></li>
+<li><a href="#12-issues">Issues</a></li>
+<li><a href="#13-resuming-and-reproducing">Resuming and reproducing</a></li>
+<li><a href="#14-extending-the-tool">Extending the tool</a></li>
+<li><a href="#15-limits-of-this-version">Limits of this version</a></li>
+</ol>
+<h2 id="1-the-idea-in-one-minute">1. The idea in one minute</h2>
+<p>You show a model the same image with the same question, and you change one thing. Here, the language:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Image</th>
+<th>English</th>
+<th>French</th>
+<th>Moved?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>img1.png</code></td>
+<td>yes</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>img2.png</code></td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>img3.png</code></td>
+<td>yes</td>
+<td>yes</td>
+<td>no</td>
+</tr>
+</tbody>
+</table></div>
+<p>VLMShift turns this into numbers:</p>
+<ul>
+<li><strong>Does the model do worse?</strong> The balanced accuracy goes from 0.90 to 0.75.</li>
+<li><strong>Does it change its mind?</strong> 12% of its answers moved.</li>
+<li><strong>How sure are we?</strong> Each number comes with an interval.</li>
+<li><strong>What is missing?</strong> The report says what could not be measured, and why.</li>
+</ul>
+<h2 id="2-words-to-know">2. Words to know</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Word</th>
+<th>Meaning</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sample</strong></td>
+<td>An image with its question, before any change</td>
+<td><code>img1.png</code> and its question</td>
+</tr>
+<tr>
+<td><strong>Variant</strong></td>
+<td>One version of a sample</td>
+<td>The French version of that question</td>
+</tr>
+<tr>
+<td><strong>Axis</strong></td>
+<td>What you compare</td>
+<td><code>language</code>, <code>site</code>, <code>quality</code></td>
+</tr>
+<tr>
+<td><strong>Level</strong></td>
+<td>A value of an axis</td>
+<td><code>EN</code>, <code>FR</code></td>
+</tr>
+<tr>
+<td><strong>Controlled axis</strong></td>
+<td>You changed the same sample on purpose, so samples can be compared face to face</td>
+<td>The question was translated</td>
+</tr>
+<tr>
+<td><strong>Observed axis</strong></td>
+<td>The groups already exist in the data, so samples are different</td>
+<td>The image comes from site A or site B</td>
+</tr>
+<tr>
+<td><strong>Unit</strong></td>
+<td>A group of rows that are not independent of each other</td>
+<td>All the images of one subject</td>
+</tr>
+<tr>
+<td><strong>Measure</strong></td>
+<td>One comparison you ask for</td>
+<td><code>language</code>, or <code>language</code> within each <code>site</code></td>
+</tr>
+<tr>
+<td><strong>Run</strong></td>
+<td>One execution of <code>experiment.yaml</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Analysis</strong></td>
+<td>One set of computations on a run, described by <code>analysis.yaml</code></td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="3-your-data">3. Your data</h2>
+<p>Your data is one table, in CSV or Parquet, with <strong>one row per variant</strong>. Column names are free: <code>roles</code> says which column plays which part.</p>
+<h3 id="start-from-a-folder-of-images">Start from a folder of images</h3>
+<p>You do not have to write the table by hand. <code>vlmshift init</code> makes it from a folder, with a starting <code>experiment.yaml</code> and <code>analysis.yaml</code> next to it:</p>
+<pre><code class="language-bash">vlmshift init images --question &quot;EN=Is there a dog in this image? Answer yes or no.&quot; --question &quot;FR=Y a-t-il un chien dans cette image ? Répondez par oui ou non.&quot;
+</code></pre>
+<ul>
+<li>Give one <code>--question</code> per level to compare, at least two. Each one reads <code>LEVEL=text</code>.</li>
+<li><code>--axis</code> names the condition. Default: <code>language</code>.</li>
+<li>A first subfolder named <code>positive</code>, <code>negative</code> or <code>unknown</code> gives the label of its images. Any other image gets <code>unknown</code>.</li>
+<li>Each image starts as its own subject. Edit the <code>subject</code> column if several images belong together.</li>
+<li>An existing file is never replaced.</li>
+</ul>
+<h3 id="writing-the-table-yourself">Writing the table yourself</h3>
+<pre><code class="language-csv">image,question,label,language,site,subject
+images/img1.png,Is there a circle in this image? Answer yes or no.,positive,EN,A,subj1
+images/img1.png,Y a-t-il un cercle dans cette image ? Répondez par oui ou non.,positive,FR,A,subj1
+images/img2.png,Is there a circle in this image? Answer yes or no.,negative,EN,A,subj1
+images/img2.png,Y a-t-il un cercle dans cette image ? Répondez par oui ou non.,negative,FR,A,subj1
+</code></pre>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Required</th>
+<th>What it holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Image</td>
+<td>Yes</td>
+<td>Path of the image, relative to the table file</td>
+</tr>
+<tr>
+<td>Question</td>
+<td>For generative models</td>
+<td>The text of the question, or use <code>task.template</code></td>
+</tr>
+<tr>
+<td>Label</td>
+<td>Yes</td>
+<td><code>positive</code>, <code>negative</code> or <code>unknown</code></td>
+</tr>
+<tr>
+<td>One axis</td>
+<td>Yes, at least one</td>
+<td>The levels you compare</td>
+</tr>
+<tr>
+<td>Unit</td>
+<td>No</td>
+<td>Which rows belong together. Default: each sample on its own</td>
+</tr>
+<tr>
+<td>Positive and negative text</td>
+<td>For contrastive models</td>
+<td>Two sentences, or use <code>task.contrastive</code></td>
+</tr>
+<tr>
+<td>Sample ID</td>
+<td>No</td>
+<td>Links variants. Computed if absent</td>
+</tr>
+<tr>
+<td>Any other column</td>
+<td>No</td>
+<td>Kept. If a template uses it, it is part of the question and may change between the variants (a word translated, for example). Otherwise it is part of the sample: the rows of one sample must have the same value in it</td>
+</tr>
+</tbody>
+</table></div>
+<p>Good to know:</p>
+<ul>
+<li><strong>Label <code>unknown</code></strong>: the row is left out of accuracy, and kept for answer change. Never write <code>negative</code> when you do not know.</li>
+<li><strong>Sample ID</strong>: the tool links two rows when all their values are the same, apart from the question, the sentences and the controlled axes. Give your own <code>sample_id</code> column if variants use different image files, such as an image you blurred yourself. When several questions are asked about one image, such as one per concept, the columns of the template tell them apart and stay in the sample.</li>
+<li><strong>Columns named after a role</strong>: a column called <code>sample_id</code>, <code>unit</code> or <code>original_id</code> takes that role without being declared. An <code>id</code> column of your dataset is kept as <code>original_id</code>, since VLMShift writes its own <code>id</code>. One column can serve two roles, such as a case number for <code>sample_id</code> and <code>unit</code>.</li>
+<li><strong>Numeric column as an axis</strong>: an observed axis with more than 4 values, such as an age, is cut into four quartiles, in the audit, the coverage and the measures. Each one is named by its rank then its interval, such as <code>Q1 (4.999, 16.25]</code>: write that name to choose it as <code>reference</code>. A controlled axis keeps its own levels.</li>
+<li><strong>Several files</strong>: <code>data</code> can be a list. The files are put end to end and must have the same columns: the import stops otherwise.</li>
+<li><strong>CSV from a spreadsheet</strong>: commas, or semicolons as written by a spreadsheet set to French; UTF-8, or Windows-1252 as written by Excel. The first line tells the separator.</li>
+</ul>
+<h3 id="what-is-checked-at-import">What is checked at import</h3>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>What happens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Image not found</td>
+<td>The row is removed, with a warning</td>
+</tr>
+<tr>
+<td>Two identical rows</td>
+<td>One is removed, with a warning</td>
+</tr>
+<tr>
+<td>Invalid or empty label</td>
+<td>The table is refused</td>
+</tr>
+<tr>
+<td>One sample with several units or labels</td>
+<td>The table is refused</td>
+</tr>
+<tr>
+<td>Two questions of one sample at the same levels of the controlled axes</td>
+<td>The table is refused: their pairs would be chosen at random</td>
+</tr>
+<tr>
+<td>Image with more than 8 bits per pixel, common for X-rays</td>
+<td>A warning. Contrastive models scale it; convert it to 8 bits for the others</td>
+</tr>
+<tr>
+<td>Column named in the configuration but absent</td>
+<td>The tool stops</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="4-describing-an-experiment-experimentyaml">4. Describing an experiment: <code>experiment.yaml</code></h2>
+<p>This file says what to test. Changing the data, the question or the models means asking the models again. Only what really changed is recomputed.</p>
+<p>A complete example:</p>
+<pre><code class="language-yaml">schema_version: 1
+data: my_table.csv
+workspace: ./workspace
+
+roles:
+  unit: subject
+
+axes:
+  language: {type: controlled}
+  site:     {type: observed}
+
+task:
+  type: yes_no
+  answers:
+    yes: [&quot;yes&quot;, &quot;oui&quot;]
+    no:  [&quot;no&quot;, &quot;non&quot;]
+
+models:
+  - {name: qwen, adapter: vlmevalkit, id: Qwen2.5-VL-7B-Instruct}
+
+inference:
+  temperature: 0
+  max_new_tokens: 16
+</code></pre>
+<p>All paths are relative to the YAML file. An unknown key is an error, so a typo never goes unnoticed.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Required</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>schema_version</code></td>
+<td>Yes</td>
+<td></td>
+<td>Always <code>1</code></td>
+</tr>
+<tr>
+<td><code>data</code></td>
+<td>Yes</td>
+<td></td>
+<td>One path, or a list of paths</td>
+</tr>
+<tr>
+<td><code>workspace</code></td>
+<td>No</td>
+<td><code>./workspace</code></td>
+<td>Where results go</td>
+</tr>
+<tr>
+<td><code>roles.image</code>, <code>.question</code>, <code>.label</code></td>
+<td>No</td>
+<td>Same name</td>
+<td>Column for each role</td>
+</tr>
+<tr>
+<td><code>roles.unit</code></td>
+<td>No</td>
+<td>Sample ID</td>
+<td>Column of the independent unit</td>
+</tr>
+<tr>
+<td><code>roles.sample_id</code></td>
+<td>No</td>
+<td>Computed</td>
+<td>Column linking variants</td>
+</tr>
+<tr>
+<td><code>roles.original_id</code></td>
+<td>No</td>
+<td>None</td>
+<td>Your own row identifier, kept and checked</td>
+</tr>
+<tr>
+<td><code>roles.positive_text</code>, <code>.negative_text</code></td>
+<td>No</td>
+<td>None</td>
+<td>Columns of contrastive sentences</td>
+</tr>
+<tr>
+<td><code>axes.&lt;column&gt;.type</code></td>
+<td>Yes, one axis at least</td>
+<td></td>
+<td><code>controlled</code> or <code>observed</code></td>
+</tr>
+<tr>
+<td><code>task.type</code></td>
+<td>Yes</td>
+<td></td>
+<td><code>yes_no</code>, the only type for now</td>
+</tr>
+<tr>
+<td><code>task.template</code></td>
+<td>No</td>
+<td>Question column</td>
+<td>Text with <code>{column}</code> holes</td>
+</tr>
+<tr>
+<td><code>task.answers</code></td>
+<td>No</td>
+<td>See <a href="#6-reading-the-answers">section 6</a></td>
+<td>Accepted words, or a path to a YAML file with the same shape</td>
+</tr>
+<tr>
+<td><code>task.reader_llm</code></td>
+<td>No</td>
+<td>None</td>
+<td>Small model that reads answers</td>
+</tr>
+<tr>
+<td><code>task.contrastive</code></td>
+<td>For contrastive models without sentence columns</td>
+<td>None</td>
+<td><code>positive_template</code> and <code>negative_template</code></td>
+</tr>
+<tr>
+<td><code>models</code></td>
+<td>Yes</td>
+<td></td>
+<td>See <a href="#5-models">section 5</a></td>
+</tr>
+<tr>
+<td><code>inference.temperature</code></td>
+<td>No</td>
+<td><code>0</code></td>
+<td><code>0</code> means repeatable answers</td>
+</tr>
+<tr>
+<td><code>inference.max_new_tokens</code></td>
+<td>No</td>
+<td><code>16</code></td>
+<td>Maximum answer length</td>
+</tr>
+<tr>
+<td><code>inference.retries</code></td>
+<td>No</td>
+<td><code>2</code></td>
+<td>Attempts before the <code>error</code> status</td>
+</tr>
+</tbody>
+</table></div>
+<p>Using a template instead of a question column:</p>
+<pre><code class="language-yaml">task:
+  type: yes_no
+  template: &quot;Is there a {concept} in this image? Answer yes or no.&quot;
+</code></pre>
+<p>The tool writes the exact text for each row at step 3 and stores it. You can always check what a model really read in <code>variants.parquet</code>.</p>
+<h2 id="5-models">5. Models</h2>
+<p>Each entry of <code>models</code> has a unique <code>name</code>, shown in the results, and an <code>adapter</code>, which says how to call it.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Required</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>Yes</td>
+<td>Your name for this model</td>
+</tr>
+<tr>
+<td><code>adapter</code></td>
+<td>Yes</td>
+<td><code>huggingface</code>, <code>vlmevalkit</code>, <code>contrastive</code>, or a name you registered</td>
+</tr>
+<tr>
+<td><code>id</code></td>
+<td>No</td>
+<td>Catalogue or Hugging Face name. Default: <code>name</code></td>
+</tr>
+<tr>
+<td><code>revision</code></td>
+<td>No</td>
+<td>Exact version of the weights</td>
+</tr>
+<tr>
+<td><code>params</code></td>
+<td>No</td>
+<td>Overrides <code>inference</code> for this model</td>
+</tr>
+<tr>
+<td><code>embeddings</code></td>
+<td>No</td>
+<td><code>true</code> keeps image vectors for the probe</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="generative-models-through-hugging-face">Generative models, through Hugging Face</h3>
+<p>These models answer with text, and the transformers library runs them by itself: InstructBLIP, LLaVA, Qwen-VL, SmolVLM and the other models of the Hugging Face hub tagged <em>image-text-to-text</em>. Nothing more to install on Google Colab or Kaggle:</p>
+<pre><code class="language-yaml">models:
+  - {name: instructblip, adapter: huggingface, id: Salesforce/instructblip-vicuna-13b, revision: 91271ed4920607b735c9925dfa495de6d012d16d}
+</code></pre>
+<p>Install <code>environments/huggingface.txt</code> first, or <code>pip install -e &quot;.[local]&quot;</code>.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Setting in <code>params</code></th>
+<th>Values</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>quantize</code></td>
+<td><code>8bit</code> or <code>4bit</code>: the weights take 2 or 4 times less memory. Needs an NVIDIA card and <code>bitsandbytes</code></td>
+<td>Full weights</td>
+</tr>
+<tr>
+<td><code>dtype</code></td>
+<td><code>float16</code>, <code>bfloat16</code> or <code>float32</code></td>
+<td><code>float16</code> on a card, <code>float32</code> on a processor</td>
+</tr>
+</tbody>
+</table></div>
+<p>Things to know:</p>
+<ul>
+<li><strong>The question</strong>: a model with a chat template (LLaVA, Qwen, SmolVLM) gets the question inside it, as it was trained. A model without one (InstructBLIP) gets the question as it is.</li>
+<li><strong>Several cards</strong>: a model too large for one card is spread over all of them.</li>
+<li><strong>Shrunk weights</strong>: answers can differ a little from the full model, and a <code>model_note</code> issue says so in the report.</li>
+<li><strong>Without a card</strong>: it works on a processor, but a large model is very slow. <code>vlmshift check</code> gives the time of the full run.</li>
+<li><strong>No card of your own?</strong> See <a href="colab.html">Colab and Kaggle</a>.</li>
+</ul>
+<h3 id="generative-models-through-vlmevalkit">Generative models, through VLMEvalKit</h3>
+<p>These models answer with text. Any model of the <a href="https://github.com/open-compass/VLMEvalKit">VLMEvalKit</a> catalogue works by its name, with no code to write:</p>
+<pre><code class="language-yaml">models:
+  - {name: qwen, adapter: vlmevalkit, id: Qwen2.5-VL-7B-Instruct}
+</code></pre>
+<p>Install the environment first. The <a href="server.html">NVIDIA server guide</a> gives every step:</p>
+<pre><code class="language-bash">pip install -r environments/vlmevalkit.txt
+</code></pre>
+<p>Things to know:</p>
+<ul>
+<li><strong>Graphics card</strong>: many local models of the catalogue require an NVIDIA card.</li>
+<li><strong>Exact question</strong>: VLMShift calls the model directly, so it reads exactly the text written at step 3.</li>
+<li><strong>Settings</strong>: <code>temperature</code> and <code>max_new_tokens</code> are only passed on if the model can take them. If a model refuses a setting, or receives it without declaring it, a <code>model_note</code> issue says so. Check it before trusting a run.</li>
+<li><strong>Versions</strong>: write <code>revision</code> for a result you want to publish. Without it, the weights can change between two runs. A model that cannot be pinned gives an error.</li>
+<li><strong>API models</strong>: their failure sentence is treated as a real failure, so it gives <code>error</code>, never <code>INVALID</code>.</li>
+</ul>
+<h3 id="contrastive-models">Contrastive models</h3>
+<p>Models such as CLIP do not write text. They compare an image to two sentences, and the closest sentence gives the decision.</p>
+<pre><code class="language-yaml">task:
+  type: yes_no
+  contrastive:
+    positive_template: &quot;a photo showing a {concept}&quot;
+    negative_template: &quot;a photo with no {concept}&quot;
+
+models:
+  - {name: clip, adapter: contrastive, id: openai/clip-vit-base-patch32, embeddings: true}
+</code></pre>
+<p>To vary the language, use the <code>positive_text</code> and <code>negative_text</code> columns, with one row per language. Install <code>environments/contrastive.txt</code> first.</p>
+<h3 id="try-the-models-before-a-long-run">Try the models before a long run</h3>
+<pre><code class="language-bash">vlmshift check experiment.yaml
+</code></pre>
+<p>This asks each model up to four real questions, with different levels of the axes. It prints:</p>
+<ul>
+<li>the graphics cards and the main library versions</li>
+<li>each question, the raw answer and how it is read</li>
+<li>any <code>model_note</code>, and answers the reader does not understand</li>
+<li>an estimate of the length of the full run</li>
+</ul>
+<p>No answer is kept, so the check changes no result. The command ends with an error if a model gave no answer. See <a href="server.html#4-check-before-the-long-run">what to look for</a>.</p>
+<p>A long run then prints one line per minute for each model, with the errors so far and the time left.</p>
+<h3 id="models-that-need-different-environments">Models that need different environments</h3>
+<p>Different model families can need different library versions. Run each one in its own environment. Both commands fill the same run:</p>
+<pre><code class="language-bash">vlmshift run experiment.yaml --only model-a
+</code></pre>
+<pre><code class="language-bash">vlmshift run experiment.yaml --only model-b
+</code></pre>
+<p><code>run_log.json</code> keeps the library versions of each model. Until every model is done, the report opens with &quot;Partial run&quot;.</p>
+<h3 id="fake-models">Fake models</h3>
+<p><code>fake_generative</code> and <code>fake_contrastive</code> follow a fixed rule and need no GPU. They power the tests, with the tiny dataset of <code>tests/fixtures/toy/</code>, and only know its eight images.</p>
+<h2 id="6-reading-the-answers">6. Reading the answers</h2>
+<p>A generative model writes free text. A reader turns it into <code>yes</code> or <code>no</code>.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>You declare</th>
+<th>How answers are read</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>answers</code> only</td>
+<td>By the list</td>
+</tr>
+<tr>
+<td><code>reader_llm</code> only</td>
+<td>By the small LLM</td>
+</tr>
+<tr>
+<td>Both</td>
+<td>The list first, then the small LLM for what remains</td>
+</tr>
+<tr>
+<td>Neither</td>
+<td>By a default list: <code>yes</code> and <code>no</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>The list</strong> ignores case, and spaces and punctuation at both ends. So <code>Yes.</code> matches <code>yes</code>, and <code>Yes, there is one</code> does not.</p>
+<p><strong>The small LLM</strong> is a local language model that classifies an answer as <code>yes</code>, <code>no</code> or <code>unclear</code>:</p>
+<pre><code class="language-yaml">task:
+  type: yes_no
+  answers: {yes: [&quot;yes&quot;], no: [&quot;no&quot;]}
+  reader_llm:
+    model: &lt;Hugging Face name&gt;
+    validation: annotated_answers.csv
+</code></pre>
+<p>A reader could understand one language less well, and that would look like a shift. Three safeguards exist:</p>
+<ul>
+<li>The <code>decision_source</code> column says whether each decision came from the list or the LLM.</li>
+<li>The report shows the share of decisions made by the LLM.</li>
+<li><code>validation</code> measures its accuracy language by language, on answers annotated by hand (columns <code>response</code>, <code>language</code>, <code>expected</code>). Without this file, the report says the reader is not validated.</li>
+</ul>
+<p>Each row ends with one of three statuses:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>valid</code></td>
+<td>The answer was read</td>
+</tr>
+<tr>
+<td><code>INVALID</code></td>
+<td>The model answered, but nothing readable came out</td>
+</tr>
+<tr>
+<td><code>error</code></td>
+<td>A technical failure: the model never answered</td>
+</tr>
+</tbody>
+</table></div>
+<p>Raw answers are stored, so changing the reader does not call the models again.</p>
+<h2 id="7-commands">7. Commands</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>vlmshift init &lt;folder&gt; --question LEVEL=text ...</code></td>
+<td>Makes a table and two YAML files from a folder of images</td>
+</tr>
+<tr>
+<td><code>vlmshift import experiment.yaml</code></td>
+<td>Step 1: table and checks</td>
+</tr>
+<tr>
+<td><code>vlmshift audit experiment.yaml</code></td>
+<td>Steps 1 and 2: prints the counts, no model needed</td>
+</tr>
+<tr>
+<td><code>vlmshift prepare experiment.yaml</code></td>
+<td>Steps 1 to 3: exact texts, no model needed</td>
+</tr>
+<tr>
+<td><code>vlmshift check experiment.yaml</code></td>
+<td>Steps 1 to 3, then a few real questions to each model. Keeps no answer</td>
+</tr>
+<tr>
+<td><code>vlmshift run experiment.yaml</code></td>
+<td>Steps 1 to 4: asks the models</td>
+</tr>
+<tr>
+<td><code>vlmshift check</code> or <code>run</code>, with <code>--only &lt;model&gt;</code></td>
+<td>The same, for some models only</td>
+</tr>
+<tr>
+<td><code>vlmshift analyze analysis.yaml --run &lt;folder&gt;</code></td>
+<td>Steps 5 and 6: statistics and report</td>
+</tr>
+<tr>
+<td><code>vlmshift all experiment.yaml analysis.yaml</code></td>
+<td>Everything</td>
+</tr>
+</tbody>
+</table></div>
+<p>Each command redoes the previous steps if needed and can be run again safely. Each step prints its issues, one line per kind, starting with <code>!</code>.</p>
+<h2 id="8-describing-an-analysis-analysisyaml">8. Describing an analysis: <code>analysis.yaml</code></h2>
+<p>This file says what to compute on a run. Rerun it as often as you like: it never calls a model.</p>
+<pre><code class="language-yaml">schema_version: 1
+run: runs/to-replace
+
+axes:
+  language: {reference: EN}
+
+measures:
+  - {name: language, compare: language}
+  - {name: site, compare: site}
+  - {name: language_by_site, compare: language, split_by: [site]}
+
+stats:
+  bootstrap: 2000
+  min_units: 30
+</code></pre>
+<p><code>run</code> is replaced by <code>vlmshift all</code>, or by <code>--run</code> with <code>vlmshift analyze</code>.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>run</code></td>
+<td>Required</td>
+<td>The run to analyse</td>
+</tr>
+<tr>
+<td><code>axes.&lt;axis&gt;.reference</code></td>
+<td>None: all pairs</td>
+<td>The level the others are compared to</td>
+</tr>
+<tr>
+<td><code>axes.&lt;axis&gt;.levels</code></td>
+<td>All levels</td>
+<td>Which levels to keep, in the measures that compare or split by this axis. Levels on an axis that no measure uses are an error</td>
+</tr>
+<tr>
+<td><code>measures</code></td>
+<td>One per axis</td>
+<td>The comparisons you want</td>
+</tr>
+<tr>
+<td><code>measures[].compare</code></td>
+<td>Required</td>
+<td>The axis to compare</td>
+</tr>
+<tr>
+<td><code>measures[].split_by</code></td>
+<td>Nothing</td>
+<td>Redo the comparison within each level of these axes</td>
+</tr>
+<tr>
+<td><code>stats.bootstrap</code></td>
+<td><code>2000</code></td>
+<td>Number of random draws, at least 100</td>
+</tr>
+<tr>
+<td><code>stats.alpha</code></td>
+<td><code>0.05</code></td>
+<td>Risk accepted for significance</td>
+</tr>
+<tr>
+<td><code>stats.seed</code></td>
+<td><code>0</code></td>
+<td>Same seed, same numbers</td>
+</tr>
+<tr>
+<td><code>stats.min_units</code></td>
+<td><code>30</code></td>
+<td>Below this number of units: not estimable</td>
+</tr>
+<tr>
+<td><code>latent.targets</code></td>
+<td>None</td>
+<td>Columns to probe, see <a href="#10-the-latent-space-probe">section 10</a></td>
+</tr>
+<tr>
+<td><code>latent.folds</code></td>
+<td><code>5</code></td>
+<td>Number of cross-validation folds</td>
+</tr>
+<tr>
+<td><code>report.notice</code></td>
+<td>None</td>
+<td>A sentence shown at the top of the report</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="9-what-is-measured">9. What is measured</h2>
+<h3 id="in-each-cell">In each cell</h3>
+<p>A cell is one level, or one combination of levels.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Name in <code>metrics.csv</code></th>
+<th>Metric</th>
+<th>Plain meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sens</code></td>
+<td>Sensitivity</td>
+<td>Among real positives, how many does the model find?</td>
+</tr>
+<tr>
+<td><code>spec</code></td>
+<td>Specificity</td>
+<td>Among real negatives, how many does it recognise?</td>
+</tr>
+<tr>
+<td><code>ba</code></td>
+<td>Balanced accuracy</td>
+<td>The average of the two</td>
+</tr>
+<tr>
+<td><code>yes_rate</code></td>
+<td>Yes rate</td>
+<td>How often it says yes, right or wrong</td>
+</tr>
+<tr>
+<td><code>inv_rate</code></td>
+<td>INVALID rate</td>
+<td>How often its answer cannot be read</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="between-two-levels">Between two levels</h3>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Name in <code>metrics.csv</code></th>
+<th>Question</th>
+<th>Needs labels</th>
+<th>Works on</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>delta_ba</code> (<code>delta_sens</code>, <code>delta_spec</code>)</td>
+<td>Does the model do worse?</td>
+<td>Yes</td>
+<td>Both axis types</td>
+</tr>
+<tr>
+<td><code>delta_yes_rate</code></td>
+<td>Does it say yes more often?</td>
+<td>No</td>
+<td>Both axis types</td>
+</tr>
+<tr>
+<td><code>delta_inv_rate</code></td>
+<td>Does it stop following the format?</td>
+<td>No</td>
+<td>Both axis types</td>
+</tr>
+<tr>
+<td><code>chg</code> (<code>chg_yes_no</code>, <code>chg_no_yes</code>)</td>
+<td>Does it change its mind on the same samples?</td>
+<td>No</td>
+<td>Controlled axes</td>
+</tr>
+</tbody>
+</table></div>
+<p>A delta is the metric at level b minus the metric at level a. A negative <code>delta_ba</code> means the model does worse at level b.</p>
+<h3 id="two-modes">Two modes</h3>
+<p>Each number is computed twice, so an unreadable answer cannot hide a problem:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>An <code>INVALID</code> answer counts as</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>valid</code></td>
+<td>Left out</td>
+</tr>
+<tr>
+<td><code>strict</code></td>
+<td>A wrong answer, or a change</td>
+</tr>
+</tbody>
+</table></div>
+<p><code>error</code> rows are never counted as answers.</p>
+<h3 id="fair-comparisons">Fair comparisons</h3>
+<p>On a <strong>controlled axis</strong>, only samples present at both levels are compared, face to face. The samples left out are counted in <code>n_excluded</code>. On an <strong>observed axis</strong>, the groups contain different images, so there is no face-to-face comparison and no answer change.</p>
+<h3 id="how-sure-is-a-number">How sure is a number?</h3>
+<p>The tool draws <strong>units</strong> at random, with replacement, and recomputes each number 2000 times. It draws units and not rows, because two images of one subject are not independent. This gives an interval around each number.</p>
+<p>A shift is <strong>significant</strong> if its corrected interval does not contain 0. The correction (Bonferroni) accounts for the number of comparisons <code>m</code>. Without it, comparing many levels would produce false alarms. <code>ci_low</code> and <code>ci_high</code> are corrected, and <code>ci95_low</code> and <code>ci95_high</code> are uncorrected and only exploratory.</p>
+<p>A number is <strong>not estimable</strong> when it has nothing to rest on: no positive case, or fewer units than <code>min_units</code>. Each number counts only the units it rests on: a sensitivity counts the units with a positive case, a balanced accuracy the units with a positive case and those with a negative one, whichever are fewer. A cell of 40 units with a single positive image gives a sensitivity on 1 unit, so not estimable. It is shown as such, and never as 0.</p>
+<h2 id="10-the-latent-space-probe">10. The latent space probe</h2>
+<p>The probe asks: can a column, such as the site, be guessed from the way a model represents an image? If so, the model holds this information and might use it.</p>
+<pre><code class="language-yaml">latent:
+  targets: [site, label]
+  folds: 5
+</code></pre>
+<p>It needs a model with <code>embeddings: true</code>. A small classifier trains on some units and is tested on the others. Its score is compared to a noise floor, obtained on shuffled values, and only the part above this floor counts. A probe that succeeds shows that the information is there, not that the model uses it.</p>
+<h2 id="11-what-the-tool-writes">11. What the tool writes</h2>
+<pre><code class="language-text">workspace/
+├── tables/&lt;table&gt;/
+│   ├── table.parquet                 The checked table
+│   ├── issues.parquet                Issues of step 1
+│   ├── audit/
+│   │   ├── counts.parquet, .csv      Counts by level
+│   │   ├── samples.parquet, .csv     Variants of each sample
+│   │   └── issues.parquet            Issues of step 2
+│   └── variants/&lt;variants&gt;/
+│       ├── variants.parquet, .csv    The exact texts sent to the models
+│       └── issues.parquet            Issues of step 3
+├── cache/&lt;model fingerprint&gt;/        Raw answers and failures of a model, reused by every table and run
+├── reader_cache/                     Answers already read by the small LLM
+└── runs/&lt;run&gt;/
+    ├── experiment.yaml               Frozen copy
+    ├── audit/                        The audit of this experiment, copied from its table
+    ├── results.parquet, .csv         One row per variant and model: raw answer, decision, status
+    ├── embeddings.parquet            Image vectors, if requested
+    ├── reader_validation.parquet     Accuracy of the small LLM, if a validation set is given
+    ├── run_log.json                  Versions, dates, settings, fingerprints
+    ├── issues.parquet                Issues of steps 3 and 4
+    └── analyses/&lt;analysis&gt;/
+        ├── analysis.yaml             Frozen copy
+        ├── metrics.parquet           All the numbers
+        ├── probes.parquet            Probe results
+        ├── issues.parquet            Issues of step 5
+        └── report/                   What you read
+</code></pre>
+<p>The summary of <code>report.md</code> gives the main significant shifts in plain sentences, largest first, and warns when they rest on fewer than 30 units. It names the levels where fewer than half of the answers can be used, such as a language the model does not speak. When nothing could be tested, it says so instead of reporting no shift. The <code>report/</code> folder also holds these tables, each in CSV and Parquet:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>metrics</code></td>
+<td>Every number, with its interval and counts</td>
+</tr>
+<tr>
+<td><code>matrix_&lt;measure&gt;</code></td>
+<td>One measure as a cross table, ready to read</td>
+</tr>
+<tr>
+<td><code>coverage</code></td>
+<td>For each model, in total and by level of each axis: rows expected, valid, INVALID, failed, missing</td>
+</tr>
+<tr>
+<td><code>audit_counts</code></td>
+<td>The counts of step 2</td>
+</tr>
+<tr>
+<td><code>probes</code></td>
+<td>Probe results</td>
+</tr>
+<tr>
+<td><code>reader_share</code></td>
+<td>Share of decisions made by the small LLM</td>
+</tr>
+<tr>
+<td><code>reader_validation</code></td>
+<td>Its accuracy by language</td>
+</tr>
+<tr>
+<td><code>issues</code></td>
+<td>Every issue of every step</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="12-issues">12. Issues</h2>
+<p>The tool never fixes a problem silently. It prints it in the terminal, then lists it in <code>issues.csv</code>. An <code>error</code> stops the step, and a <code>warning</code> lets it continue.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Step</th>
+<th>Level</th>
+<th>Meaning</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>label_invalid</code></td>
+<td>1</td>
+<td>error</td>
+<td>A label is empty or unknown</td>
+<td>Fix the label, or write <code>unknown</code></td>
+</tr>
+<tr>
+<td><code>sample_many_units</code></td>
+<td>1</td>
+<td>error</td>
+<td>One sample has several units</td>
+<td>Check the <code>unit</code> column, or give a <code>sample_id</code></td>
+</tr>
+<tr>
+<td><code>sample_many_labels</code></td>
+<td>1</td>
+<td>error</td>
+<td>One sample has several labels</td>
+<td>Check the labels</td>
+</tr>
+<tr>
+<td><code>id_collision</code></td>
+<td>1</td>
+<td>error</td>
+<td>Two different rows got the same identifier</td>
+<td>Check the table</td>
+</tr>
+<tr>
+<td><code>image_missing</code></td>
+<td>1</td>
+<td>warning</td>
+<td>Image not found: row excluded</td>
+<td>Check the path</td>
+</tr>
+<tr>
+<td><code>duplicate_line</code></td>
+<td>1</td>
+<td>warning</td>
+<td>Identical row removed</td>
+<td>Nothing, or clean the table</td>
+</tr>
+<tr>
+<td><code>original_id_invalid</code></td>
+<td>1</td>
+<td>warning</td>
+<td>Your identifier is empty or repeated</td>
+<td>Fix this column</td>
+</tr>
+<tr>
+<td><code>same_levels</code></td>
+<td>1</td>
+<td>error</td>
+<td>Two rows of one sample share the levels of the controlled axes</td>
+<td>Add a column that tells the questions apart, such as <code>concept_id</code></td>
+</tr>
+<tr>
+<td><code>image_16bit</code></td>
+<td>1</td>
+<td>warning</td>
+<td>Images have more than 8 bits per pixel</td>
+<td>Convert them to 8 bits, unless every model is contrastive</td>
+</tr>
+<tr>
+<td><code>axis_single_level</code></td>
+<td>1</td>
+<td>warning</td>
+<td>An axis has one level: no comparison possible</td>
+<td>Check the axis</td>
+</tr>
+<tr>
+<td><code>low_count</code></td>
+<td>2</td>
+<td>warning</td>
+<td>A level has fewer than 30 units</td>
+<td>Add data, or read this number carefully</td>
+</tr>
+<tr>
+<td><code>empty_template_value</code></td>
+<td>3</td>
+<td>warning</td>
+<td>A template hole has no value: row excluded</td>
+<td>Fill the column</td>
+</tr>
+<tr>
+<td><code>model_error</code></td>
+<td>4</td>
+<td>warning</td>
+<td>A row failed after all attempts</td>
+<td>Rerun: failed rows are tried again</td>
+</tr>
+<tr>
+<td><code>embed_error</code></td>
+<td>4</td>
+<td>warning</td>
+<td>A vector could not be computed</td>
+<td>Rerun</td>
+</tr>
+<tr>
+<td><code>model_note</code></td>
+<td>4</td>
+<td>warning</td>
+<td>A setting was refused or may be ignored</td>
+<td>Check the model before trusting the run</td>
+</tr>
+<tr>
+<td><code>model_pending</code></td>
+<td>4</td>
+<td>warning</td>
+<td>A model has not finished</td>
+<td>Run it, or accept a partial result</td>
+</tr>
+<tr>
+<td><code>vectors_pending</code></td>
+<td>4</td>
+<td>warning</td>
+<td>Image vectors are missing for a model with <code>embeddings: true</code></td>
+<td>Run it again: only the missing vectors are computed</td>
+</tr>
+<tr>
+<td><code>csv_locked</code></td>
+<td>2 to 6</td>
+<td>warning</td>
+<td>A CSV copy is open in another program and was not updated</td>
+<td>Close it and run the command again</td>
+</tr>
+<tr>
+<td><code>constant_model</code></td>
+<td>5</td>
+<td>warning</td>
+<td>A model always gives the same answer</td>
+<td>Check its answers</td>
+</tr>
+<tr>
+<td><code>probe_skipped</code></td>
+<td>5</td>
+<td>warning</td>
+<td>A probe could not run</td>
+<td>Read the message</td>
+</tr>
+<tr>
+<td><code>probe_not_estimable</code></td>
+<td>5</td>
+<td>warning</td>
+<td>Too little data for a probe</td>
+<td>Add data</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="13-resuming-and-reproducing">13. Resuming and reproducing</h2>
+<p><strong>Resuming.</strong> Each answer enters a cache as soon as it arrives. After a crash, run the same command again: finished work is skipped, and rows in <code>error</code> are tried again. If every variant of a model fails, <code>run</code> and <code>all</code> end with an error: the run folder is written, but there is nothing to analyse.</p>
+<p><strong>Fingerprints.</strong> A table, a set of variants, a run and an analysis each get a fingerprint computed from their content. Same content, same fingerprint, same folder. Change one value and you get a new folder, and the old one stays.</p>
+<p><strong>What is reused.</strong> The answers of a model are kept in <code>workspace/cache/</code>, one folder per model, version and settings. Inside, each answer is keyed by the question itself: the image and the exact text. So adding a model does not ask the others again; correcting a label, adding an axis or importing another table asks only the new questions; and changing the answer reader asks no model at all.</p>
+<p><strong>What is recorded.</strong> <code>run_log.json</code> holds library versions, dates, settings and fingerprints, per model. <code>experiment.yaml</code> and <code>analysis.yaml</code> are copied next to their results.</p>
+<p>For a result to publish, fix the <code>revision</code> of each model and install the pinned files of <code>environments/</code>.</p>
+<h2 id="14-extending-the-tool">14. Extending the tool</h2>
+<h3 id="add-a-model">Add a model</h3>
+<p>Write a class that follows <code>Model</code>, register it under a name, and start the command line from your own script:</p>
+<pre><code class="language-python"># my_run.py
+from vlmshift.cli import main
+from vlmshift.extensions import register_adapter
+from vlmshift.inference.base import Model
+
+
+class MyModel(Model):
+    kind = &quot;generative&quot;
+
+    def generate(self, images, prompts, params):
+        return [&quot;yes&quot; for _ in images]
+
+
+register_adapter(&quot;my_model&quot;, MyModel)
+main()
+</code></pre>
+<pre><code class="language-yaml">models:
+  - {name: mine, adapter: my_model}
+</code></pre>
+<pre><code class="language-bash">python my_run.py all experiment.yaml analysis.yaml
+</code></pre>
+<div class="table"><table>
+<thead>
+<tr>
+<th>To write</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>load()</code></td>
+<td>To load weights</td>
+</tr>
+<tr>
+<td><code>generate(images, prompts, params)</code></td>
+<td>Generative model: returns one text per image</td>
+</tr>
+<tr>
+<td><code>score(images, positives, negatives)</code></td>
+<td>Contrastive model: returns two scores per image</td>
+</tr>
+<tr>
+<td><code>embed(images)</code></td>
+<td>With <code>supports_embed = True</code>: returns one vector per image</td>
+</tr>
+</tbody>
+</table></div>
+<p>Raise <code>ModelError</code> on a technical failure. The engine tries again, then sets the <code>error</code> status.</p>
+<h3 id="add-a-package">Add a package</h3>
+<p>A package is a folder of <code>packages/</code> that prepares data and configurations on top of Core. <code>packages/med/</code> is the example: it reproduces a medical image benchmark, 11 chest X-ray sources asked about 35 concepts in 7 languages by 10 models, with one script per source, label rules, its own models and the tables of the paper. Copy <code>prepare/template.py</code> to add a source.</p>
+<p>Data you may not share stays out of the repository. Each source script carries a card, <code>SOURCE</code>: name and version, official page, access level, steps, licence, SHA-256 of the raw file or folder when it is known, a note, BibTeX. <code>check.py</code> uses it to say where to get a missing source and to warn about another version. <code>cite.py</code> turns the cards into <code>SOURCES.md</code>, to find the data, and <code>references.bib</code>, to cite it.</p>
+<h3 id="rebuild-the-site">Rebuild the site</h3>
+<p>The site in <code>docs/</code> is generated from the code and from these Markdown files, and a test fails when it is out of date:</p>
+<pre><code class="language-bash">python tools/site/build.py
+</code></pre>
+<h2 id="15-limits-of-this-version">15. Limits of this version</h2>
+<ul>
+<li><strong>Generative models have not run on an NVIDIA card yet.</strong> SmolVLM-256M ran through the real VLMEvalKit on a processor only, after changing one line of VLMEvalKit for that test. The small LLM is only tested through tiny random models. Contrastive models are tested on the real CLIP. Do a first real run before trusting a generative result.</li>
+<li><strong>One task type</strong>: yes/no questions.</li>
+<li><strong>Long format only</strong>: one row per variant.</li>
+<li><strong>Probe</strong>: contrastive models only, because VLMEvalKit gives no access to the vectors of generative models.</li>
+<li><strong>Med package</strong>: its 11 sources are tested on fake raw folders shaped like the real ones. Only Montgomery has run on the real data, and none of its 10 models on its real weights. Its 35 concepts and their translations are rebuilt, not those of the paper.</li>
+</ul>
+<p>The <a href="design.html">design</a> describes what is planned, and the <a href="decisions.html">decisions</a> record why each choice was made.</p>
+</main>
+</body>
+</html>

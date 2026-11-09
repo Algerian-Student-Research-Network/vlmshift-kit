@@ -1,0 +1,48 @@
+# Medical image benchmark: 11 chest X-ray sources, 35 concepts, 7 languages, 10 models.
+# Each table is written by `python -m prepare`, one script per source in prepare/.
+schema_version: 1
+data:
+  - ../data/tables/nih.parquet
+  - ../data/tables/ranzcr.parquet
+  - ../data/tables/padchest_gr.parquet
+  - ../data/tables/tb_pakistan.parquet
+  - ../data/tables/pneumonia_bangladesh.parquet
+  - ../data/tables/nigeria.parquet
+  - ../data/tables/ricord.parquet
+  - ../data/tables/shenzhen.parquet
+  - ../data/tables/ptx498.parquet
+  - ../data/tables/jsrt.parquet
+  - ../data/tables/montgomery.parquet
+workspace: ../workspace
+
+roles:
+  unit: patient
+  positive_text: positive_text
+  negative_text: negative_text
+
+axes:
+  language: {type: controlled}  # the same image and concept, asked in 7 languages
+  site:     {type: observed}    # the source: the acquisition domain
+  concept:  {type: observed}    # the finding asked about
+
+task:
+  type: yes_no
+  # One response format for every language: YES or NO in English. Anything else is INVALID, never NO.
+  answers:
+    yes: ["yes"]
+    no: ["no"]
+
+# Each model is pinned to a commit, so the weights cannot change between two runs.
+models:
+  # Contrastive: a positive and a negative sentence per question, the closer to the image wins.
+  - {name: biomedclip, adapter: open_clip, id: "hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224"}
+  - {name: medsiglip, adapter: contrastive, id: google/medsiglip-448, revision: 9cea28a1a1195f665105faa6e8544c112fd960a4, embeddings: true}  # gated: accept its terms on Hugging Face
+  - {name: chexzero, adapter: chexzero, id: data/weights/chexzero/best_64_5e-05_original_22000_0.864.pt}  # see check.py
+  - {name: clip-vit-l14, adapter: contrastive, id: openai/clip-vit-large-patch14, revision: 32bd64288804d66eefd0ccbe215aa642df71cc41}
+  - {name: siglip-so400m, adapter: contrastive, id: google/siglip-so400m-patch14-384, revision: 9fdffc58afc957d1a03a25b10dba0329ab15c2a3}
+  # Generative: the question, with no system prompt of ours. max_pixels caps the image tokens.
+  - {name: medgemma-4b, adapter: huggingface, id: google/medgemma-4b-it, revision: 290cda5eeccbee130f987c4ad74a59ae6f196408, params: {dtype: bfloat16}}  # gated
+  - {name: lingshu-7b, adapter: huggingface, id: lingshu-medical-mllm/Lingshu-7B, revision: b98aecd41dfd9d7545a6b8e2f4743ae8471bd7a9, params: {processor: {max_pixels: 1003520}}}
+  - {name: chexone, adapter: huggingface, id: StanfordAIMI/CheXOne, revision: 0c350e6852ea08f9d9baf3b7595c1a10d4849927, params: {processor: {max_pixels: 262144}}}  # 512 × 512, as trained
+  - {name: llava-med, adapter: huggingface, id: chaoyinshe/llava-med-v1.5-mistral-7b-hf, revision: 627be53734c667cbb1669608dac747a4485a22d7}  # LLaVA-Med v1.5 converted for transformers
+  - {name: qwen2.5-vl-7b, adapter: huggingface, id: Qwen/Qwen2.5-VL-7B-Instruct, revision: cc594898137f460bfe9f0759e9844b3ce807cfb5, params: {processor: {max_pixels: 1003520}}}

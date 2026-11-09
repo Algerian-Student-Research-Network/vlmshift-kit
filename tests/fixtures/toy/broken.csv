@@ -1,0 +1,15 @@
+id,sample,image,question,label,language,device,subject
+1,s1,images/img1.png,Q?,positive,EN,X,subj1
+1,s1,images/img1.png,Q?,positive,EN,X,subj1
+2,s1,images/img1.png,Q?,positive,FR,X,subj1
+,s2,images/img1.png,Q?,negative,EN,X,subj2
+2,s2,images/img1.png,Q?,negative,FR,X,subj2
+3,s3,images/absent.png,Q?,positive,EN,X,subj3
+4,s4,images/img1.png,Q?,maybe,EN,X,subj4
+5,s5,images/img1.png,Q?,,EN,X,subj5
+6,s6,images/img1.png,Q?,positive,EN,X,subj6
+7,s6,images/img1.png,Q?,positive,FR,X,subj7
+8,s7,images/img1.png,Q?,positive,EN,X,subj8
+9,s7,images/img1.png,Q?,negative,FR,X,subj8
+10,s8,images/img1.png,Q?,positive,EN,X,subj9
+11,s8,images/img1.png,Other?,positive,EN,X,subj9

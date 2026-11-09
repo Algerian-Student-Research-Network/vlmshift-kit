@@ -1,0 +1,13 @@
+# POPE mini: how much worse does a model get when the absent object is harder to rule out?
+schema_version: 1
+# Replaced by `vlmshift all`. For `vlmshift analyze`, pass --run <path printed by `vlmshift run`>.
+run: runs/to-replace
+
+axes:
+  mode: {reference: random}
+
+measures:
+  - {name: mode, compare: mode}
+
+report:
+  notice: "POPE mini: 100 of the 500 images of POPE (Li et al., EMNLP 2023). Published results: reference.csv."

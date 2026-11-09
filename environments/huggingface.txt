@@ -1,0 +1,8 @@
+# Generative models through Hugging Face (adapter: huggingface), and contrastive models.
+# Already installed on Google Colab and Kaggle. A GPU is not required, but large models are slow without one.
+torch
+transformers
+accelerate
+pillow
+# Only for params.quantize (8bit or 4bit), on an NVIDIA card.
+bitsandbytes; sys_platform == "linux"

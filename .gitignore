@@ -1,0 +1,16 @@
+.venv/
+# Local settings of Claude Code: paths of this machine
+.claude/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+workspace/
+
+# Med: raw data and prepared tables. Their sources forbid sharing them: see packages/med/SOURCES.md
+packages/med/data/
+
+# POPE mini: fetched by examples/pope_mini/fetch.py, not redistributed
+examples/pope_mini/data/
+
+# Written by the Colab notebook for the card it runs on
+examples/pope_mini/paper_here.yaml

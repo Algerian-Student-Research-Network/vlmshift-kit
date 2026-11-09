@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tutorial · VLMShift</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="VLMShift. A simple kit for measuring shift in vision-language models.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2032%2032%22%20role%3D%22img%22%20aria-label%3D%22VLMShift%20logo%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20%3E%3Cpath%20d%3D%22M15%2C4%20A10%2C10%200%200%200%2015%2C24%20Z%22%20fill%3D%22%233f7a5c%22/%3E%3Cpath%20d%3D%22M17%2C8%20A10%2C10%200%200%201%2017%2C28%20Z%22%20fill%3D%22%233f7a5c%22%20fill-opacity%3D%22.38%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="top"><a class="brand" href="index.html"><svg viewBox="0 0 32 32" role="img" aria-label="VLMShift logo" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M15,4 A10,10 0 0 0 15,24 Z" fill="var(--accent, #3f7a5c)"/><path d="M17,8 A10,10 0 0 1 17,28 Z" fill="var(--accent, #3f7a5c)" fill-opacity=".38"/></svg><span>VLMShift</span></a><nav aria-label="Site"><a href="tutorial.html" aria-current="page">Tutorial</a><a href="files.html">File guide</a><a href="documentation.html">Documentation</a></nav></header>
+<main class="reading">
+<h1 id="tutorial-your-first-experiment">Tutorial: your first experiment</h1>
+<p>You will install VLMShift, run a demo, read a report, then set it up on your own images. No programming is needed.</p>
+<p><strong>What you need:</strong> Python 3.10 or later, and a terminal. To check your version:</p>
+<pre><code class="language-bash">python --version
+</code></pre>
+<h2 id="1-install">1. Install</h2>
+<p>Download the project and enter its folder:</p>
+<pre><code class="language-bash">git clone https://github.com/Algerian-Student-Research-Network/vlmshift-kit.git VLMShift
+</code></pre>
+<pre><code class="language-bash">cd VLMShift
+</code></pre>
+<p>Create a virtual environment. It keeps the libraries of VLMShift apart from the rest of your computer:</p>
+<pre><code class="language-bash">python -m venv .venv
+</code></pre>
+<p>Activate it. On Windows:</p>
+<pre><code class="language-bash">.venv\Scripts\activate
+</code></pre>
+<p>On macOS or Linux:</p>
+<pre><code class="language-bash">source .venv/bin/activate
+</code></pre>
+<p>Install VLMShift. The <code>local</code> part adds PyTorch and Transformers, which run CLIP for the demo on your processor:</p>
+<pre><code class="language-bash">pip install -e &quot;.[local]&quot;
+</code></pre>
+<p>Check that it works:</p>
+<pre><code class="language-bash">vlmshift --help
+</code></pre>
+<p>You should see the list of commands.</p>
+<h2 id="2-run-the-demo">2. Run the demo</h2>
+<p>The demo uses POPE (Li et al., EMNLP 2023), a published benchmark of object hallucination: a model says an object is there when it is not. POPE asks &quot;Is there a bird in the image?&quot; about photos of COCO. For each photo, it asks about 3 objects that are in it and 3 that are not, and it picks the absent objects in three ways, the <code>mode</code> column. Here is one of the photos, with a bird, a person and a boat:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>How the absent object is picked</th>
+<th>Absent objects asked about</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>random</code></td>
+<td>Any object</td>
+<td>fire hydrant, bed, bench</td>
+</tr>
+<tr>
+<td><code>popular</code></td>
+<td>Among the most common objects</td>
+<td>dining table, car, chair</td>
+</tr>
+<tr>
+<td><code>adversarial</code></td>
+<td>Among those often seen with the objects of the photo</td>
+<td>handbag, car, chair</td>
+</tr>
+</tbody>
+</table></div>
+<p>A model that answers from what it expects, rather than from what it sees, says yes more often as the absent object becomes more likely. The paper found this in most of the models it tested. The demo checks whether CLIP does the same, on 100 of the 500 photos of the paper.</p>
+<p>First fetch the photos and the questions, once. The photos follow the terms of Flickr, so they are not stored in the project:</p>
+<pre><code class="language-bash">python examples/pope_mini/fetch.py
+</code></pre>
+<pre><code class="language-text">Images: 100/100
+Table: 1800 questions about 100 images -&gt; ...\examples\pope_mini\data\pope_mini.csv
+</code></pre>
+<p>Then run every step. The first time, it downloads CLIP (600 MB). Then it takes a few minutes on a normal processor. To run it in your browser instead, open the notebook <code>examples/pope_mini/colab.ipynb</code> in Google Colab: see the <a href="colab.html">Colab and Kaggle guide</a>.</p>
+<pre><code class="language-bash">vlmshift all examples/pope_mini/experiment.yaml examples/pope_mini/analysis.yaml
+</code></pre>
+<p>Each line of the output is one step that finished:</p>
+<pre><code class="language-text">Table: 1800 rows, 1800 samples -&gt; ...
+Audit -&gt; ...
+Variants: 1800 rows -&gt; ...
+  clip: 312 of 1029, 0 errors, about 2 min left
+  clip: 640 of 1029, 0 errors, about 74 s left
+  clip: 960 of 1029, 0 errors, about 13 s left
+Run -&gt; ...
+Report -&gt; ...\report\report.md
+</code></pre>
+<p>Only 1,029 of the 1,800 questions reach CLIP: the questions about the objects of the photo are the same in the three modes, and an answer already obtained is never asked again. A line starting with <code>!</code> would be a warning; there is none here.</p>
+<p>CLIP does not write answers. It says which of two sentences fits the photo better: &quot;a photo of a bird.&quot; or &quot;a photo.&quot;. The first one means yes. <code>experiment.yaml</code> sets these two sentences.</p>
+<p>The last line gives the path of your report. Open <code>report.md</code> in any text editor.</p>
+<h2 id="3-read-the-report">3. Read the report</h2>
+<p>The <strong>Summary</strong> tells you what moved, in plain sentences, model by model:</p>
+<pre><code class="language-text">clip
+
+- mode, random to adversarial: the model says yes more often, by 0.098 (likely between 0.062 and 0.135, 100 units).
+- mode, random to adversarial: balanced accuracy falls by 0.098 (likely between -0.135 and -0.062, 100 units).
+</code></pre>
+<p>Piece by piece:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Piece</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>clip</code></td>
+<td>The model</td>
+</tr>
+<tr>
+<td><code>mode, random to adversarial</code></td>
+<td>We compare the modes. <code>random</code> is the reference, set in <code>analysis.yaml</code></td>
+</tr>
+<tr>
+<td><code>says yes more often, by 0.098</code></td>
+<td>CLIP says yes to about 10 more questions out of 100. Rates go from 0 to 1</td>
+</tr>
+<tr>
+<td><code>balanced accuracy falls by 0.098</code></td>
+<td>The model does worse. Each mode has as many present objects as absent ones, so this is the accuracy of the paper</td>
+</tr>
+<tr>
+<td><code>likely between -0.135 and -0.062</code></td>
+<td>The likely range of the true value</td>
+</tr>
+<tr>
+<td><code>100 units</code></td>
+<td>The number of independent units behind this number: the 100 photos. The 18 questions about one photo are not independent, and <code>experiment.yaml</code> says so with <code>unit: image_id</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Only significant shifts are listed. From random to popular, CLIP loses 0.030, but its likely range reaches 0: it is not listed, and <code>metrics.csv</code> keeps it.</p>
+<p>The two numbers are equal for a reason. The questions about present objects are the same in every mode, so CLIP finds as many of them, and every extra yes is a mistake on an absent object.</p>
+<h3 id="compare-with-the-paper">Compare with the paper</h3>
+<p>Give <code>compare.py</code> the path of <code>report.md</code>:</p>
+<pre><code class="language-bash">python examples/pope_mini/compare.py &lt;path of report.md&gt;
+</code></pre>
+<p>It shows how many points of accuracy each model loses from random, measured for CLIP and published for the five models of the paper (its table 3):</p>
+<pre><code class="language-text">         model   source        mode  drop  low  high
+          clip measured     popular   3.0  0.3   5.7
+          clip measured adversarial   9.8  6.5  13.0
+  InstructBLIP    paper     popular   7.4
+  InstructBLIP    paper adversarial  14.4
+         LLaVA    paper     popular   2.0
+         LLaVA    paper adversarial   3.7
+     MiniGPT-4    paper     popular   9.5
+     MiniGPT-4    paper adversarial  11.2
+MultiModal-GPT    paper     popular   0.0
+MultiModal-GPT    paper adversarial   0.0
+     mPLUG-Owl    paper     popular   2.7
+     mPLUG-Owl    paper adversarial   2.6
+</code></pre>
+<p>CLIP behaves like the models of the paper: it loses a little on popular, more on adversarial. LLaVA, mPLUG-Owl and MultiModal-GPT lose little for another reason: they say yes to almost everything, 95 to 100% of the time in the paper, so they are near chance in every mode.</p>
+<p>To check the published numbers themselves, run <code>examples/pope_mini/paper.yaml</code> on an NVIDIA card: it asks the same questions to InstructBLIP-13B, a model of the paper. No card? The notebook <code>examples/pope_mini/colab.ipynb</code> does it on Google Colab: see the <a href="colab.html">Colab and Kaggle guide</a>. <code>compare.py</code> then puts each measure next to the published one, and says whether the published value is inside the likely range. Expect a few points of difference: the paper used 500 photos, reads the answers in its own way, and ran the full model where a small card needs it shrunk to 4 bits.</p>
+<p>The next sections of the report give:</p>
+<ul>
+<li><strong>Audit</strong>: what your data contains, level by level.</li>
+<li><strong>Results by measure</strong>: where to find every number.</li>
+<li><strong>Latent space probe</strong>: whether a column can be read in the vectors of a model.</li>
+<li><strong>Reading the answers</strong>: how raw answers became yes or no.</li>
+<li><strong>Coverage limits</strong>: what is missing, and every issue found.</li>
+</ul>
+<p>The same folder holds all the tables as CSV files, which open in any spreadsheet.</p>
+<h2 id="4-set-up-your-own-images">4. Set up your own images</h2>
+<p>Create a new folder anywhere, and put your images in an <code>images</code> folder inside it. If you know the true answer, sort them into <code>positive</code> and <code>negative</code>:</p>
+<pre><code class="language-text">my_experiment/
+└── images/
+    ├── positive/        the answer is yes
+    │   ├── photo1.png
+    │   └── photo2.png
+    └── negative/        the answer is no
+        ├── photo3.png
+        └── photo4.png
+</code></pre>
+<p>Images placed directly in <code>images/</code> get the label <code>unknown</code>. They still count for answer changes, but not for accuracy. Most formats work, such as PNG, JPEG, WebP and TIFF. Other formats, such as DICOM, must be converted first.</p>
+<p>Enter your folder:</p>
+<pre><code class="language-bash">cd my_experiment
+</code></pre>
+<p>Then give the question once per condition. Here we compare English and French:</p>
+<pre><code class="language-bash">vlmshift init images --question &quot;EN=Is there a dog in this image? Answer yes or no.&quot; --question &quot;FR=Y a-t-il un chien dans cette image ? Répondez par oui ou non.&quot;
+</code></pre>
+<p>The tool tells you what it found:</p>
+<pre><code class="language-text">Table: 8 rows, 4 images (2 positive, 2 negative) -&gt; table.csv
+Next: read experiment.yaml, then run: vlmshift prepare experiment.yaml
+</code></pre>
+<p>Three files appear next to <code>images</code>. An existing file is never replaced.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>What it holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>table.csv</code></td>
+<td>One row per image and per condition. It opens in any spreadsheet</td>
+</tr>
+<tr>
+<td><code>experiment.yaml</code></td>
+<td>What to test: the table, the condition, the model</td>
+</tr>
+<tr>
+<td><code>analysis.yaml</code></td>
+<td>What to compute on the results</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="adapt-the-files">Adapt the files</h3>
+<p>Open <code>experiment.yaml</code> and add the words for yes and no in your languages:</p>
+<pre><code class="language-yaml">task:
+  type: yes_no
+  answers:
+    yes: [&quot;yes&quot;, &quot;oui&quot;]
+    no: [&quot;no&quot;, &quot;non&quot;]
+</code></pre>
+<p>Open <code>analysis.yaml</code> and add these lines at the end:</p>
+<pre><code class="language-yaml">stats:
+  min_units: 2
+</code></pre>
+<p>Below 30 units, numbers show as &quot;not estimable&quot; by default. We lower this limit only to try the tool on four images. For real results, remove these lines and use at least 30 units per level.</p>
+<p><strong>Good to know:</strong> in <code>table.csv</code>, the <code>subject</code> column says which images belong together. By default each image is its own subject. If several images come from one person or one object, give them the same value: they are not independent, and the statistics need to know.</p>
+<h2 id="5-check-your-data-with-no-model">5. Check your data, with no model</h2>
+<p>Run the first three steps. No model is called:</p>
+<pre><code class="language-bash">vlmshift prepare experiment.yaml
+</code></pre>
+<pre><code class="language-text">Table: 8 rows, 4 samples -&gt; ...
+Audit -&gt; ...
+  ! low_count (2): language = EN: 4 units (threshold 30)
+Variants: 8 rows -&gt; ...
+</code></pre>
+<p>Here, 8 rows and 4 samples: four images, each with two languages. <code>low_count</code> is normal on four images.</p>
+<p>Each line gives a folder. Two files are worth opening, in any spreadsheet:</p>
+<ul>
+<li><code>counts.csv</code>, in the <code>audit</code> folder: how many images you have per level. <code>vlmshift audit experiment.yaml</code> also prints it in the terminal.</li>
+<li><code>variants.csv</code>, in the variants folder: the exact text each model will read.</li>
+</ul>
+<p>If something is wrong, you find out now:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Message</th>
+<th>What it means</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>! image_missing</code></td>
+<td>An image was not found: its row was removed</td>
+<td>Check the path in <code>table.csv</code></td>
+</tr>
+<tr>
+<td><code>Error: File not found: ...table.csv</code></td>
+<td>The table is not where <code>data</code> says</td>
+<td>Check the name in <code>experiment.yaml</code></td>
+</tr>
+<tr>
+<td><code>Error: Columns not found for ...</code></td>
+<td>A column named in the configuration is absent</td>
+<td>Check the column names of your table</td>
+</tr>
+<tr>
+<td><code>Error: Table rejected ... Invalid label</code></td>
+<td>A label is empty or misspelled</td>
+<td>Use <code>positive</code>, <code>negative</code> or <code>unknown</code></td>
+</tr>
+<tr>
+<td><code>Error: ... is not valid</code></td>
+<td>The YAML has an unknown key or a wrong value</td>
+<td>Read the message: it names the key</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="6-run-a-real-model">6. Run a real model</h2>
+<p>The model in <code>experiment.yaml</code> comes from the VLMEvalKit catalogue. Most of its local models, including this one, <strong>need an NVIDIA graphics card</strong>.</p>
+<blockquote>
+<p>Generative models have only run on a processor with this version, never on an NVIDIA card. Treat your first run as a test, and check a few raw answers yourself.</p>
+</blockquote>
+<p><strong>Working on a remote server?</strong> Follow the <a href="server.html">NVIDIA server guide</a>, which covers every step from copying your files to bringing the report back.</p>
+<p><strong>On a computer with an NVIDIA card?</strong> From the <code>VLMShift</code> folder, install the library:</p>
+<pre><code class="language-bash">pip install -r environments/vlmevalkit.txt
+</code></pre>
+<p>Then, from <code>my_experiment</code>, ask the model a few real questions:</p>
+<pre><code class="language-bash">vlmshift check experiment.yaml
+</code></pre>
+<p>It shows the graphics card, the answers, how they are read, and how long the full run would take. If they look right, run everything:</p>
+<pre><code class="language-bash">vlmshift all experiment.yaml analysis.yaml
+</code></pre>
+<p>The first run downloads the model, which can take a while. If it stops for any reason, run the same command again: answers already obtained are kept.</p>
+<p><strong>No NVIDIA card?</strong> Use the free cards of Google Colab or Kaggle: the <a href="colab.html">Colab and Kaggle guide</a> gives every step. Contrastive models such as CLIP also run on a normal processor: see <a href="documentation.html#contrastive-models">contrastive models</a>.</p>
+<h2 id="7-read-your-results">7. Read your results</h2>
+<p>Open the <code>report.md</code> printed on the last line, as in <a href="#3-read-the-report">step 3</a>. Start with <strong>Coverage limits</strong>: it tells you whether each model answered everything, at each level. Then read the <strong>Summary</strong>. To see what a model really wrote, open <code>results.csv</code> in the run folder.</p>
+<p>If you see <code>not estimable</code>, the number has too little data behind it. It is never replaced by 0.</p>
+<p>To change the analysis, edit <code>analysis.yaml</code> and run the same command. Finished work is reused, so no model is called again.</p>
+<h2 id="where-to-go-next">Where to go next</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>I want to</th>
+<th>Do this</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Compare another condition</td>
+<td>Add a column to <code>table.csv</code> and a line under <code>axes</code></td>
+</tr>
+<tr>
+<td>Test a second model</td>
+<td>Add a line under <code>models</code>. The first model is not run again</td>
+</tr>
+<tr>
+<td>Use a remote server</td>
+<td>Follow the <a href="server.html">NVIDIA server guide</a></td>
+</tr>
+<tr>
+<td>Compare within groups</td>
+<td>Add <code>split_by</code> to a measure in <code>analysis.yaml</code></td>
+</tr>
+<tr>
+<td>Understand a metric</td>
+<td>Read <a href="documentation.html#9-what-is-measured">what is measured</a></td>
+</tr>
+<tr>
+<td>Use my own model</td>
+<td>Read <a href="documentation.html#add-a-model">add a model</a></td>
+</tr>
+</tbody>
+</table></div>
+<p>The <a href="documentation.html">documentation</a> describes every option. The <a href="files.html">file guide</a> shows every file on a clickable map.</p>
+</main>
+</body>
+</html>

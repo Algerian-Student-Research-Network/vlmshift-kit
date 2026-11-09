@@ -1,0 +1,4 @@
+# Contrastive models and small LLM.
+torch
+transformers
+pillow

@@ -1,0 +1,160 @@
+<main class="page">
+  <section>
+    <h2>Six steps, two files</h2>
+    <p class="intro">Describe your experiment in two files, then one command runs the steps in order. Click a step to see its files.</p>
+    <div class="steps"><!--PIPELINE--></div>
+  </section>
+
+  <section>
+    <h2>Every file, step by step</h2>
+    <p class="intro">Follow one experiment from the command to the report. Each box is a real file of the code, and the links are read from the code itself.</p>
+    <ul class="legend" aria-label="Legend">
+      <li><svg viewBox="0 0 42 20" aria-hidden="true"><line x1="2" y1="10" x2="40" y2="10" stroke="var(--accent)" stroke-width="4"/></svg><span><b>Thick green line:</b> the order of execution. <code>cli.py</code> starts the steps one after the other.</span></li>
+      <li><svg viewBox="0 0 42 20" aria-hidden="true"><line x1="2" y1="10" x2="34" y2="10" stroke="var(--ink)" stroke-width="1.4"/><path d="M34,6 L41,10 L34,14 z" fill="var(--ink)"/></svg><span><b>Thin arrow:</b> one file calls another. Dashed: the call happens at run time, with no import.</span></li>
+      <li><svg viewBox="0 0 42 20" aria-hidden="true"><rect x="1" y="3" width="12" height="14" rx="2" fill="var(--accent)" stroke="var(--accent)"/><rect x="15" y="3" width="12" height="14" rx="2" fill="var(--a22)" stroke="var(--a35)"/><rect x="29" y="3" width="12" height="14" rx="2" fill="var(--card)" stroke="var(--a35)"/></svg><span><b>Solid green:</b> runs a step. <b>Light green:</b> a tool shared by many steps. <b>White:</b> helps one step. Links to shared tools appear when you click.</span></li>
+      <li><svg viewBox="0 0 42 20" aria-hidden="true"><rect x="2" y="2" width="38" height="16" rx="3" fill="var(--card)" stroke="var(--a60)" stroke-dasharray="5 4"/></svg><span><b>Dashed blocks:</b> what the step reads and writes. <code>&lt;t&gt;</code>, <code>&lt;v&gt;</code>, <code>&lt;m&gt;</code>, <code>&lt;r&gt;</code> and <code>&lt;a&gt;</code> are the fingerprints of the table, variants, model, run and analysis.</span></li>
+    </ul>
+  </section>
+
+  <div class="stage">
+    <div class="bar">
+      <p>Click a box: its explanation opens just below it.</p>
+      <button id="zoom" type="button">Actual size</button>
+    </div>
+    <figure id="fig">
+      <div class="scroll"><!--SVG--></div>
+      <figcaption>From step 1 to step 4, tables pass from file to file in memory, in a <code>Step</code> object. Steps 5 and 6 read everything back from the disk: that is why an analysis can be rerun without calling the models.</figcaption>
+    </figure>
+    <aside id="detail" aria-live="polite" hidden>
+      <div class="head">
+        <h3 id="d-title"></h3>
+        <div class="actions">
+          <button id="d-links" type="button" class="main" aria-expanded="false" aria-controls="d-box">Show links</button>
+          <button id="d-close" type="button">Close</button>
+        </div>
+      </div>
+      <div class="body">
+        <p id="d-goal"></p>
+        <div id="d-list"></div>
+      </div>
+      <div id="d-box" class="cols" hidden></div>
+    </aside>
+  </div>
+
+  <p class="foot">Not drawn: empty <code>__init__.py</code> files, <code>tests/</code>, <code>examples/</code> and <code>tools/site/</code>, which builds this site.</p>
+</main>
+
+<script>
+const ITEMS = /*DATA*/null;
+const map = document.getElementById("map");
+const detail = document.getElementById("detail");
+const fig = document.getElementById("fig");
+const zoom = document.getElementById("zoom");
+const linksButton = document.getElementById("d-links");
+const linksBox = document.getElementById("d-box");
+const short = path => path.replace("src/vlmshift/", "");
+let current = null;
+
+function linkList(rows) {
+  if (!rows.length) return "<span>none</span>";
+  return "<ul>" + rows.map(([other, label, kind]) => {
+    const note = kind === "run" ? " · at run time" : "";
+    const line = label + note;
+    return `<li><code>${escapeHtml(short(other))}</code>${line ? `<span class="fn">${escapeHtml(line)}</span>` : ""}</li>`;
+  }).join("") + "</ul>";
+}
+function textList(item) {
+  const note = item.n ? `<p>${escapeHtml(item.n)}</p>` : "";
+  if (!item.l.length) return note;
+  const rows = item.l.map(([name, words]) =>
+    `<li><code>${escapeHtml(name)}</code><span class="fn">${escapeHtml(words)}</span></li>`).join("");
+  return `<b>${escapeHtml(item.h.toUpperCase())}</b><ul>${rows}</ul>`;
+}
+function escapeHtml(text) {
+  const box = document.createElement("span");
+  box.textContent = text;
+  return box.innerHTML;
+}
+function clearLinks() {
+  map.classList.remove("picked");
+  map.querySelectorAll(".on").forEach(el => el.classList.remove("on"));
+}
+function clearPick() {
+  clearLinks();
+  map.querySelectorAll(".sel").forEach(el => el.classList.remove("sel"));
+  detail.hidden = true;
+  current = null;
+}
+/* The panel opens just below the chosen box, so it stays in view whatever the height of the viewer. */
+function place() {
+  const box = map.querySelector(`.node[data-id="${current}"]`).getBoundingClientRect();
+  const stage = detail.parentElement.getBoundingClientRect();
+  detail.style.left = Math.max(0, Math.min(box.left - stage.left, stage.width - detail.offsetWidth)) + "px";
+  detail.style.top = box.bottom - stage.top + 8 + "px";
+}
+/* A click on a box: its explanation, without touching the rest of the map. */
+function pick(id) {
+  clearPick();
+  current = id;
+  const item = ITEMS[id];
+  map.querySelector(`.node[data-id="${id}"]`).classList.add("sel");
+  document.getElementById("d-title").textContent = item.t;
+  document.getElementById("d-goal").textContent = item.g;
+  document.getElementById("d-list").innerHTML = textList(item);
+  linksBox.innerHTML = item.c.map(([heading, rows]) => `<div><b>${escapeHtml(heading)}</b>${linkList(rows)}</div>`).join("");
+  setLinks(false);
+  detail.hidden = false;
+  detail.scrollTop = 0;
+  place();
+  detail.scrollIntoView({ block: "nearest" });
+}
+/* The button: the list of links, and highlighting them on the map. */
+function setLinks(show) {
+  clearLinks();
+  linksBox.hidden = !show;
+  linksButton.textContent = show ? "Hide links" : "Show links";
+  linksButton.setAttribute("aria-expanded", String(show));
+  if (!show) return;
+  const id = current;
+  const near = new Set(ITEMS[id].c.flatMap(([, rows]) => rows.map(row => row[3] || row[0])));
+  map.classList.add("picked");
+  map.querySelectorAll(".node").forEach(node => {
+    if (near.has(node.dataset.id)) node.classList.add("on");
+  });
+  map.querySelectorAll(".link").forEach(link => {
+    if (link.dataset.a === id || link.dataset.b === id) link.classList.add("on");
+  });
+  detail.scrollTop = linksBox.offsetTop - 8;
+  detail.scrollIntoView({ block: "nearest" });
+}
+linksButton.addEventListener("click", () => setLinks(linksBox.hidden));
+document.getElementById("d-close").addEventListener("click", clearPick);
+map.addEventListener("click", event => {
+  const node = event.target.closest(".node");
+  node ? pick(node.dataset.id) : clearPick();
+});
+map.addEventListener("keydown", event => {
+  const node = event.target.closest(".node");
+  if (node && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); pick(node.dataset.id); }
+});
+document.addEventListener("keydown", event => { if (event.key === "Escape") clearPick(); });
+
+function setZoom(actual) {
+  fig.classList.toggle("actual", actual);
+  zoom.textContent = actual ? "Fit to width" : "Actual size";
+}
+zoom.addEventListener("click", () => {
+  setZoom(!fig.classList.contains("actual"));
+  if (current) place();
+});
+window.addEventListener("resize", () => { if (current) place(); });
+setZoom(window.innerWidth < 820); /* on a phone, the map stays readable and scrolls sideways */
+
+/* Arriving from one of the six steps: go to its band. */
+function goToStep() {
+  const band = location.hash && document.getElementById(location.hash.slice(1));
+  if (band) band.scrollIntoView({ block: "start" });
+}
+goToStep();
+window.addEventListener("hashchange", goToStep);
+</script>

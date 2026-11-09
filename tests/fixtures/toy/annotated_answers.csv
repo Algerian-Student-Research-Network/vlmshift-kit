@@ -1,0 +1,23 @@
+response,language,expected
+Yes.,EN,yes
+yes,EN,yes
+  YES!,EN,yes
+No.,EN,no
+no,EN,no
+NO,EN,no
+"Yes, there is one.",EN,yes
+"No, there is not.",EN,no
+maybe,EN,unclear
+I cannot tell,EN,unclear
+Oui.,FR,yes
+oui,FR,yes
+Non.,FR,no
+non,FR,no
+"Oui, il y en a un.",FR,yes
+"Non, il n'y en a pas.",FR,no
+peut-être,FR,unclear
+हाँ,HI,yes
+हाँ।,HI,yes
+नहीं,HI,no
+नहीं।,HI,no
+शायद,HI,unclear

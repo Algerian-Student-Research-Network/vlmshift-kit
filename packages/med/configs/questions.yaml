@@ -1,0 +1,362 @@
+# The multilingual concept bank: one wording per language, one term per concept (section 3).
+#
+# The question and the two sentences are the same for every concept: only {term} changes, so
+# language is the only thing that varies between the 7 rows of one image and one concept. The
+# answer is always YES or NO in English, whatever the language of the question.
+#
+# The paper names neither its 35 concepts nor its wordings: this bank is rebuilt from the labels
+# of the 11 sources (docs/decisions.md). The translations must be checked by a doctor who speaks
+# the language before any result is published.
+templates:
+  EN:
+    question: "Finding: {term}. Is this finding present on this chest X-ray? Answer only YES or NO."
+    positive: "a chest X-ray with {term}"
+    negative: "a chest X-ray without {term}"
+  FR:
+    question: "Signe radiologique : {term}. Ce signe est-il présent sur cette radiographie thoracique ? Répondez uniquement par YES ou NO."
+    positive: "une radiographie thoracique avec {term}"
+    negative: "une radiographie thoracique sans {term}"
+  ES:
+    question: "Hallazgo: {term}. ¿Está presente este hallazgo en esta radiografía de tórax? Responda solo YES o NO."
+    positive: "una radiografía de tórax con {term}"
+    negative: "una radiografía de tórax sin {term}"
+  DE:
+    # "mit dem Befund {term}": the term stays as written, whatever its gender or case.
+    question: "Befund: {term}. Ist dieser Befund auf diesem Röntgenbild des Thorax vorhanden? Antworten Sie nur mit YES oder NO."
+    positive: "ein Röntgenbild des Thorax mit dem Befund {term}"
+    negative: "ein Röntgenbild des Thorax ohne den Befund {term}"
+  AR:
+    question: "الموجودة: {term}. هل هذه الموجودة ظاهرة في صورة الأشعة السينية للصدر هذه؟ أجب فقط بـ YES أو NO."
+    positive: "صورة أشعة سينية للصدر تُظهر {term}"
+    negative: "صورة أشعة سينية للصدر بدون {term}"
+  HI:
+    question: "निष्कर्ष: {term}। क्या यह निष्कर्ष इस छाती के एक्स-रे में मौजूद है? केवल YES या NO में उत्तर दें।"
+    positive: "{term} वाला छाती का एक्स-रे"
+    negative: "{term} के बिना छाती का एक्स-रे"
+  ZH:
+    question: "所见：{term}。这张胸部X光片中是否有该所见？请只回答 YES 或 NO。"
+    positive: "有{term}的胸部X光片"
+    negative: "无{term}的胸部X光片"
+
+# radlex: the RadLex identifier (RID), checked on radlex.org (RadLex 4.3). Without a RadLex term: its
+# parts joined by +, or null with the closest term. The other keys: the term in each language.
+concepts:
+  # The 14 findings of NIH ChestX-ray14, also in PadChest-GR.
+  atelectasis:
+    radlex: RID28493
+    EN: atelectasis
+    FR: atélectasie
+    ES: atelectasia
+    DE: Atelektase
+    AR: انخماص الرئة
+    HI: एटेलेक्टैसिस
+    ZH: 肺不张
+  consolidation:
+    radlex: RID43255
+    EN: consolidation
+    FR: condensation alvéolaire
+    ES: consolidación
+    DE: Konsolidierung
+    AR: تصلد رئوي
+    HI: कंसोलिडेशन
+    ZH: 肺实变
+  infiltration:
+    radlex: RID39317
+    EN: infiltrate
+    FR: infiltrat
+    ES: infiltrado
+    DE: Infiltrat
+    AR: ارتشاح رئوي
+    HI: इन्फिल्ट्रेट
+    ZH: 浸润影
+  pneumothorax:
+    radlex: RID5352
+    EN: pneumothorax
+    FR: pneumothorax
+    ES: neumotórax
+    DE: Pneumothorax
+    AR: استرواح الصدر
+    HI: न्यूमोथोरैक्स
+    ZH: 气胸
+  edema:
+    radlex: RID4866
+    EN: pulmonary edema
+    FR: œdème pulmonaire
+    ES: edema pulmonar
+    DE: Lungenödem
+    AR: وذمة رئوية
+    HI: फुफ्फुसीय एडिमा
+    ZH: 肺水肿
+  emphysema:
+    radlex: RID4799
+    EN: emphysema
+    FR: emphysème
+    ES: enfisema
+    DE: Emphysem
+    AR: نفاخ رئوي
+    HI: एम्फाइसीमा
+    ZH: 肺气肿
+  fibrosis:
+    radlex: null  # no term; closest RID3821 interstitial fibrosis
+    EN: pulmonary fibrosis
+    FR: fibrose pulmonaire
+    ES: fibrosis pulmonar
+    DE: Lungenfibrose
+    AR: تليف رئوي
+    HI: फुफ्फुसीय फाइब्रोसिस
+    ZH: 肺纤维化
+  effusion:
+    radlex: RID34539
+    EN: pleural effusion
+    FR: épanchement pleural
+    ES: derrame pleural
+    DE: Pleuraerguss
+    AR: انصباب جنبي
+    HI: प्लूरल इफ्यूजन
+    ZH: 胸腔积液
+  pneumonia:
+    radlex: RID5350
+    EN: pneumonia
+    FR: pneumonie
+    ES: neumonía
+    DE: Pneumonie
+    AR: التهاب رئوي
+    HI: निमोनिया
+    ZH: 肺炎
+  pleural_thickening:
+    radlex: RID1362 + RID28509  # pleura + thickening
+    EN: pleural thickening
+    FR: épaississement pleural
+    ES: engrosamiento pleural
+    DE: Pleuraverdickung
+    AR: تسمك الجنبة
+    HI: प्लूरल थिकनिंग
+    ZH: 胸膜增厚
+  cardiomegaly:
+    radlex: RID1385 + RID5791  # heart + enlarged
+    EN: cardiomegaly
+    FR: cardiomégalie
+    ES: cardiomegalia
+    DE: Kardiomegalie
+    AR: تضخم القلب
+    HI: कार्डियोमेगाली
+    ZH: 心脏增大
+  nodule:
+    radlex: RID50149
+    EN: pulmonary nodule
+    FR: nodule pulmonaire
+    ES: nódulo pulmonar
+    DE: Lungenrundherd
+    AR: عقيدة رئوية
+    HI: फुफ्फुसीय नोड्यूल
+    ZH: 肺结节
+  mass:
+    radlex: RID39056
+    EN: lung mass
+    FR: masse pulmonaire
+    ES: masa pulmonar
+    DE: Raumforderung der Lunge
+    AR: كتلة رئوية
+    HI: फेफड़े का मास
+    ZH: 肺部肿块
+  hernia:
+    radlex: RID4897
+    EN: hiatal hernia
+    FR: hernie hiatale
+    ES: hernia de hiato
+    DE: Hiatushernie
+    AR: فتق حجابي
+    HI: हायटल हर्निया
+    ZH: 食管裂孔疝
+  # Infections of the TB, pneumonia and COVID-19 sources.
+  tuberculosis:
+    radlex: RID29116
+    EN: tuberculosis
+    FR: tuberculose
+    ES: tuberculosis
+    DE: Tuberkulose
+    AR: السل الرئوي
+    HI: तपेदिक
+    ZH: 肺结核
+  covid19:
+    radlex: null  # no term; closest RID34769 viral pneumonia
+    EN: COVID-19 pneumonia
+    FR: pneumonie à COVID-19
+    ES: neumonía por COVID-19
+    DE: COVID-19-Pneumonie
+    AR: التهاب رئوي بكوفيد-19
+    HI: कोविड-19 निमोनिया
+    ZH: 新冠肺炎
+  # The 4 devices of RANZCR CLiP, also in PadChest-GR.
+  endotracheal_tube:
+    radlex: RID5557
+    EN: endotracheal tube
+    FR: sonde d'intubation
+    ES: tubo endotraqueal
+    DE: Endotrachealtubus
+    AR: أنبوب رغامي
+    HI: एंडोट्रैकियल ट्यूब
+    ZH: 气管导管
+  nasogastric_tube:
+    radlex: RID5566
+    EN: nasogastric tube
+    FR: sonde nasogastrique
+    ES: sonda nasogástrica
+    DE: Magensonde
+    AR: أنبوب أنفي معدي
+    HI: नासोगैस्ट्रिक ट्यूब
+    ZH: 鼻胃管
+  central_venous_catheter:
+    radlex: RID5578
+    EN: central venous catheter
+    FR: cathéter veineux central
+    ES: catéter venoso central
+    DE: zentraler Venenkatheter
+    AR: قثطار وريدي مركزي
+    HI: सेंट्रल वेनस कैथेटर
+    ZH: 中心静脉导管
+  swan_ganz_catheter:
+    radlex: RID5584
+    EN: Swan-Ganz catheter
+    FR: cathéter de Swan-Ganz
+    ES: catéter de Swan-Ganz
+    DE: Swan-Ganz-Katheter
+    AR: قثطار سوان-غانز
+    HI: स्वान-गैंज़ कैथेटर
+    ZH: Swan-Ganz导管
+  # The most frequent other findings of PadChest-GR.
+  aortic_elongation:
+    radlex: RID879 + RID39072  # thoracic aorta + elongated
+    EN: aortic elongation
+    FR: déroulement aortique
+    ES: elongación aórtica
+    DE: Aortenelongation
+    AR: استطالة الأبهر
+    HI: महाधमनी का लंबा होना
+    ZH: 主动脉迂曲延长
+  scoliosis:
+    radlex: RID4756
+    EN: scoliosis
+    FR: scoliose
+    ES: escoliosis
+    DE: Skoliose
+    AR: الجنف
+    HI: स्कोलियोसिस
+    ZH: 脊柱侧弯
+  vertebral_degenerative_changes:
+    radlex: RID5085
+    EN: vertebral degenerative changes
+    FR: remaniements dégénératifs vertébraux
+    ES: cambios degenerativos vertebrales
+    DE: degenerative Wirbelsäulenveränderungen
+    AR: تغيرات تنكسية في الفقرات
+    HI: कशेरुकाओं में अपक्षयी परिवर्तन
+    ZH: 椎体退行性变
+  aortic_atheromatosis:
+    radlex: null  # not looked up
+    EN: aortic atheromatosis
+    FR: athéromatose aortique
+    ES: ateromatosis aórtica
+    DE: Aortenatheromatose
+    AR: تصلب عصيدي في الأبهر
+    HI: महाधमनी एथेरोमैटोसिस
+    ZH: 主动脉粥样硬化
+  air_trapping:
+    radlex: RID28537
+    EN: air trapping
+    FR: piégeage aérique
+    ES: atrapamiento aéreo
+    DE: Air-Trapping
+    AR: احتباس الهواء
+    HI: एयर ट्रैपिंग
+    ZH: 空气潴留
+  interstitial_pattern:
+    radlex: null  # no term; closest RID43271 reticular pattern
+    EN: interstitial pattern
+    FR: syndrome interstitiel
+    ES: patrón intersticial
+    DE: interstitielles Muster
+    AR: نمط خلالي
+    HI: इंटरस्टीशियल पैटर्न
+    ZH: 间质性改变
+  hilar_enlargement:
+    radlex: RID34566 + RID5791  # pulmonary hilum + enlarged
+    EN: hilar enlargement
+    FR: élargissement hilaire
+    ES: aumento hiliar
+    DE: Hilusvergrößerung
+    AR: تضخم السرة الرئوية
+    HI: हाइलर एनलार्जमेंट
+    ZH: 肺门增大
+  costophrenic_angle_blunting:
+    radlex: RID1534 + RID5869  # costophrenic sulcus + blunted
+    EN: costophrenic angle blunting
+    FR: comblement du cul-de-sac costo-diaphragmatique
+    ES: borramiento del ángulo costofrénico
+    DE: abgestumpfter Randwinkel
+    AR: طمس الزاوية الضلعية الحجابية
+    HI: कॉस्टोफ्रेनिक कोण का कुंद होना
+    ZH: 肋膈角变钝
+  alveolar_pattern:
+    radlex: null  # no term; closest RID28533 parenchymal opacification
+    EN: alveolar pattern
+    FR: syndrome alvéolaire
+    ES: patrón alveolar
+    DE: alveoläres Muster
+    AR: نمط سنخي
+    HI: एल्वियोलर पैटर्न
+    ZH: 肺泡性改变
+  rib_fracture:
+    radlex: RID2471 + RID4650  # rib + fracture
+    EN: rib fracture
+    FR: fracture costale
+    ES: fractura costal
+    DE: Rippenfraktur
+    AR: كسر ضلعي
+    HI: पसली का फ्रैक्चर
+    ZH: 肋骨骨折
+  pacemaker:
+    radlex: RID5436
+    EN: pacemaker
+    FR: stimulateur cardiaque
+    ES: marcapasos
+    DE: Herzschrittmacher
+    AR: ناظم خطى القلب
+    HI: पेसमेकर
+    ZH: 心脏起搏器
+  calcified_granuloma:
+    radlex: RID3953 + RID5747  # granuloma + calcified
+    EN: calcified granuloma
+    FR: granulome calcifié
+    ES: granuloma calcificado
+    DE: verkalktes Granulom
+    AR: ورم حبيبي متكلس
+    HI: कैल्सीफाइड ग्रैन्युलोमा
+    ZH: 钙化肉芽肿
+  diaphragmatic_eventration:
+    radlex: null  # not looked up
+    EN: diaphragmatic eventration
+    FR: éventration diaphragmatique
+    ES: eventración diafragmática
+    DE: Zwerchfellrelaxation
+    AR: ارتخاء الحجاب الحاجز
+    HI: डायाफ्राम का इवेंट्रेशन
+    ZH: 膈膨升
+  volume_loss:
+    radlex: null  # not looked up
+    EN: lung volume loss
+    FR: perte de volume pulmonaire
+    ES: pérdida de volumen pulmonar
+    DE: Volumenverlust der Lunge
+    AR: فقدان حجم الرئة
+    HI: फेफड़े के आयतन में कमी
+    ZH: 肺容积减少
+  bronchiectasis:
+    radlex: RID28496
+    EN: bronchiectasis
+    FR: bronchectasie
+    ES: bronquiectasia
+    DE: Bronchiektase
+    AR: توسع القصبات
+    HI: ब्रोन्किइक्टेसिस
+    ZH: 支气管扩张

@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Colab and Kaggle · VLMShift</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="VLMShift. A simple kit for measuring shift in vision-language models.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2032%2032%22%20role%3D%22img%22%20aria-label%3D%22VLMShift%20logo%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20%3E%3Cpath%20d%3D%22M15%2C4%20A10%2C10%200%200%200%2015%2C24%20Z%22%20fill%3D%22%233f7a5c%22/%3E%3Cpath%20d%3D%22M17%2C8%20A10%2C10%200%200%201%2017%2C28%20Z%22%20fill%3D%22%233f7a5c%22%20fill-opacity%3D%22.38%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="top"><a class="brand" href="index.html"><svg viewBox="0 0 32 32" role="img" aria-label="VLMShift logo" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M15,4 A10,10 0 0 0 15,24 Z" fill="var(--accent, #3f7a5c)"/><path d="M17,8 A10,10 0 0 1 17,28 Z" fill="var(--accent, #3f7a5c)" fill-opacity=".38"/></svg><span>VLMShift</span></a><nav aria-label="Site"><a href="tutorial.html">Tutorial</a><a href="files.html">File guide</a><a href="documentation.html">Documentation</a></nav></header>
+<main class="reading">
+<h1 id="run-without-an-nvidia-card-colab-and-kaggle">Run without an NVIDIA card: Colab and Kaggle</h1>
+<p>Google Colab and Kaggle lend a graphics card for free, in your browser. VLMShift runs there as on your computer, and a ready notebook runs the demo: <code>examples/pope_mini/colab.ipynb</code>.</p>
+<blockquote>
+<p><strong>Tested with the versions of Colab, on a processor.</strong> The notebook ran from the first cell to the last with Python 3.13, pandas 2.2.3, torch 2.14 and transformers 5.22, as on Colab. It has not yet run on a real Colab card.</p>
+</blockquote>
+<h2 id="1-open-the-notebook">1. Open the notebook</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Free card</th>
+<th>Good to know</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://colab.research.google.com">Google Colab</a></td>
+<td>One T4, 15 GB</td>
+<td>A session lasts a few hours, then everything on it is erased</td>
+</tr>
+<tr>
+<td><a href="https://www.kaggle.com/code">Kaggle</a></td>
+<td>Two T4 of 15 GB, or one P100</td>
+<td>About 30 hours of card per week. A phone number is needed to turn the card on</td>
+</tr>
+</tbody>
+</table></div>
+<p>On Colab: <em>File &gt; Open notebook &gt; GitHub</em>, then paste the address of the project and pick <code>examples/pope_mini/colab.ipynb</code>. Or download the file and use <em>File &gt; Upload notebook</em>. On Kaggle: <em>Create &gt; New notebook</em>, then <em>File &gt; Import notebook</em>.</p>
+<p>Then choose a card before running anything:</p>
+<ul>
+<li>Colab: <em>Runtime &gt; Change runtime type &gt; T4 GPU</em>.</li>
+<li>Kaggle: <em>Settings &gt; Accelerator &gt; GPU T4 x2</em>, and <em>Settings &gt; Internet</em> on.</li>
+</ul>
+<p>Run the cells one by one, from the top.</p>
+<h2 id="2-what-the-notebook-does">2. What the notebook does</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Step</th>
+<th>What happens</th>
+<th>Card needed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Install</td>
+<td>Downloads VLMShift. torch and transformers are already installed</td>
+<td>No</td>
+</tr>
+<tr>
+<td>2. Google Drive</td>
+<td>Optional: keeps the workspace on your Drive, so a new session resumes where the last one stopped</td>
+<td>No</td>
+</tr>
+<tr>
+<td>3. Fetch</td>
+<td>100 photos of COCO and their 1,800 POPE questions, 18 MB</td>
+<td>No</td>
+</tr>
+<tr>
+<td>4. CLIP</td>
+<td>The demo of the <a href="tutorial.html#2-run-the-demo">tutorial</a>, then the comparison with the paper</td>
+<td>No</td>
+</tr>
+<tr>
+<td>5. InstructBLIP-13B</td>
+<td>A model of the POPE paper, then each measure next to the published one</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table></div>
+<p>InstructBLIP-13B downloads 57 GB the first time. In float16 it needs about 28 GB on the card. On a T4, the notebook shrinks it to 4 bits (<code>quantize: 4bit</code>) so that it fits in less than 10 GB. Its answers can then differ a little from the full model. On a card of 32 GB or more, such as an A100 of Colab Pro, the notebook runs the full model, as in the paper.</p>
+<h2 id="3-if-the-session-stops">3. If the session stops</h2>
+<p>A free session can stop at any time: after a few hours, or when you leave it idle. Every answer is written to the workspace as soon as it arrives. If the workspace is on Google Drive (step 2 of the notebook), run the notebook again from the top: VLMShift only asks the questions that have no answer yet. Without Drive, the session's disk is erased and everything starts again.</p>
+<h2 id="4-your-own-experiment">4. Your own experiment</h2>
+<ol>
+<li>Put your experiment folder on Google Drive: the images, the table, <code>experiment.yaml</code> and <code>analysis.yaml</code>. The <a href="tutorial.html#4-set-up-your-own-images">tutorial</a> makes them.</li>
+<li>In a new notebook, install VLMShift as in step 1 of the demo notebook, then mount Drive:</li>
+</ol>
+<pre><code class="language-python">from google.colab import drive
+drive.mount(&quot;/content/drive&quot;)
+%cd /content/drive/MyDrive/my_experiment
+</code></pre>
+<ol start="3">
+<li>Run each step as on your computer, with <code>!</code> in front:</li>
+</ol>
+<pre><code class="language-python">!vlmshift check experiment.yaml
+</code></pre>
+<pre><code class="language-python">!vlmshift all experiment.yaml analysis.yaml
+</code></pre>
+<p>For the model, the <code>huggingface</code> adapter needs nothing more on Colab: see <a href="documentation.html#generative-models-through-hugging-face">generative models through Hugging Face</a>. Models of the VLMEvalKit catalogue need a long installation: follow <a href="server.html#3-install">step 3 of the server guide</a> in a notebook.</p>
+<h2 id="5-which-model-fits-which-card">5. Which model fits which card</h2>
+<p>A model needs about 2 GB of card memory per billion parameters in float16, 1 GB in 8 bits and a little more than 0.5 GB in 4 bits, plus 1 to 2 GB to work.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Card</th>
+<th>Memory</th>
+<th>float16</th>
+<th>8 bits</th>
+<th>4 bits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T4 (Colab, Kaggle)</td>
+<td>15 GB</td>
+<td>up to about 6 billion parameters</td>
+<td>up to about 12</td>
+<td>up to about 20</td>
+</tr>
+<tr>
+<td>A100 (Colab Pro)</td>
+<td>40 GB</td>
+<td>up to about 18</td>
+<td>larger</td>
+<td>larger</td>
+</tr>
+</tbody>
+</table></div>
+<p>To shrink a model, add <code>params: {quantize: 4bit}</code> (or <code>8bit</code>) to its line in <code>experiment.yaml</code>, and install <code>bitsandbytes</code> first:</p>
+<pre><code class="language-python">%pip install bitsandbytes
+</code></pre>
+</main>
+</body>
+</html>

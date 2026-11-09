@@ -1,0 +1,2269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Design · VLMShift</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="VLMShift. A simple kit for measuring shift in vision-language models.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2032%2032%22%20role%3D%22img%22%20aria-label%3D%22VLMShift%20logo%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20%3E%3Cpath%20d%3D%22M15%2C4%20A10%2C10%200%200%200%2015%2C24%20Z%22%20fill%3D%22%233f7a5c%22/%3E%3Cpath%20d%3D%22M17%2C8%20A10%2C10%200%200%201%2017%2C28%20Z%22%20fill%3D%22%233f7a5c%22%20fill-opacity%3D%22.38%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="top"><a class="brand" href="index.html"><svg viewBox="0 0 32 32" role="img" aria-label="VLMShift logo" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M15,4 A10,10 0 0 0 15,24 Z" fill="var(--accent, #3f7a5c)"/><path d="M17,8 A10,10 0 0 1 17,28 Z" fill="var(--accent, #3f7a5c)" fill-opacity=".38"/></svg><span>VLMShift</span></a><nav aria-label="Site"><a href="tutorial.html">Tutorial</a><a href="files.html">File guide</a><a href="documentation.html">Documentation</a></nav></header>
+<main class="reading">
+<h1 id="vlmshift--design-document">VLMShift — Design Document</h1>
+<h2 id="writing-rules">Writing rules</h2>
+<ul>
+<li>Simple words, short sentences.</li>
+<li>Only what is needed.</li>
+<li>Bullet lists, tables and diagrams whenever they make the information faster to find.</li>
+</ul>
+<h2 id="contents">Contents</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Section</th>
+<th>Content</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Scope</td>
+<td>What the tool does and, above all, what it does not do</td>
+<td>Validated</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Glossary</td>
+<td>Axis, level, sample, run…</td>
+<td>Validated</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Data model</td>
+<td>Main table, column roles, question format</td>
+<td>Validated</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Specification by step</td>
+<td>The 6 steps: inputs, outputs, rules, edge cases, tests</td>
+<td>Validated</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Statistical specification</td>
+<td>Exact definition of each metric and each test</td>
+<td>Validated</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Architecture</td>
+<td>Folder tree, role of each folder, extension points</td>
+<td>Validated</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Contracts</td>
+<td>Exact schemas shared by the modules (configuration, files, interfaces)</td>
+<td>Validated</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="1-scope">1. Scope</h2>
+<h3 id="goal">Goal</h3>
+<p>VLMShift measures how the answers of one or more VLMs change when one or more conditions change.</p>
+<blockquote>
+<p><em>Example: same image, same question, asked in English and then in Hindi. Does the model answer the same way? Does it make more mistakes?</em></p>
+</blockquote>
+<ul>
+<li><strong>Simple use</strong>: the native features (Core) are enough.</li>
+<li><strong>Advanced use</strong>: add modules (new models, new variations, new metrics, data packages such as Med). VLMShift is designed as a modular foundation that is easy to change.</li>
+</ul>
+<h3 id="what-the-tool-does-in-order-of-use">What the tool does (in order of use)</h3>
+<ul>
+<li>Describe a dataset before evaluation</li>
+<li>Organize the variants to compare: import the ones in the dataset or (bonus) create some with simple transformations, keeping the link to the original sample</li>
+<li>Query the models, local (V1) or through an API (bonus)</li>
+<li>Measure the shifts between conditions, with their uncertainty</li>
+<li>Produce a traceable report</li>
+</ul>
+<h3 id="planned-in-the-design-not-implemented-in-v1">Planned in the design, not implemented in V1</h3>
+<ul>
+<li>Other task types (multiple choice, ordinal, numeric, localization)</li>
+<li>Image classifiers without text</li>
+<li>Interpretability: attention maps, and latent space probe for generative models (the probe for contrastive models is in V1).</li>
+</ul>
+<h3 id="development-priorities">Development priorities</h3>
+<p><strong>V1 — essential for Med</strong></p>
+<ul>
+<li><strong>First</strong>: the shared test set (section 7.5), if it does not exist yet in the code</li>
+<li>Import and checks, row and sample IDs, 3-state labels (step 1)</li>
+<li>Counts per level in the audit (step 2)</li>
+<li>Final questions and contrastive sentences (step 3)</li>
+<li>Local inference of generative and contrastive models, <code>INVALID</code> and <code>error</code>, resume (step 4)</li>
+<li>Reading of answers by list and/or local small LLM, with its safeguards (section 3)</li>
+<li>Base metrics, Δ, answer change, pairing, bootstrap by unit, Bonferroni correction (step 5, section 5)</li>
+<li>Matrix of metrics per cell (e.g. site × language)</li>
+<li>Latent space probe for contrastive models (section 5.7)</li>
+<li>Two configuration files: <code>experiment.yaml</code> and <code>analysis.yaml</code> (section 7.1)</li>
+<li>Report: tables with counts and coverage (step 6)</li>
+<li>Med package, including <code>check.py</code> and <code>run.sh</code> (section 6.3)</li>
+</ul>
+<p><strong>Bonus — after V1, without touching the fundamentals</strong></p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Order</th>
+<th>Feature</th>
+<th>Section</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Blank and shuffled images (image-dependence controls)</td>
+<td>3, step 1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Blur, noise, reduced resolution</td>
+<td>3, step 1</td>
+</tr>
+<tr>
+<td>—</td>
+<td>Wide format as input</td>
+<td>3, step 1</td>
+</tr>
+<tr>
+<td>—</td>
+<td>Configurable split of numeric columns (<code>audit.bins</code>)</td>
+<td>3, step 2</td>
+</tr>
+<tr>
+<td>—</td>
+<td>Minimum detectable shift</td>
+<td>step 2, 5.6</td>
+</tr>
+<tr>
+<td>—</td>
+<td>Crosstabs between variables in the audit</td>
+<td>step 2</td>
+</tr>
+<tr>
+<td>—</td>
+<td>Primary comparisons</td>
+<td>step 3, 5.5</td>
+</tr>
+<tr>
+<td>—</td>
+<td>API models (cache, version, call date)</td>
+<td>step 4</td>
+</tr>
+<tr>
+<td>—</td>
+<td>Import of external results, VLMEvalKit converters</td>
+<td>3, step 4</td>
+</tr>
+<tr>
+<td>—</td>
+<td>Interaction between axes</td>
+<td>5.3</td>
+</tr>
+<tr>
+<td>—</td>
+<td>McNemar and Cochran tests</td>
+<td>5.5</td>
+</tr>
+<tr>
+<td>—</td>
+<td>Polished HTML report and figures</td>
+<td>step 6</td>
+</tr>
+<tr>
+<td>—</td>
+<td>Reproduction archive and report regeneration</td>
+<td>step 6</td>
+</tr>
+<tr>
+<td>—</td>
+<td>Generic loading of extensions (<code>extensions.py</code>)</td>
+<td>6.2, 6.6</td>
+</tr>
+<tr>
+<td>—</td>
+<td>Docker containers</td>
+<td>6.4</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>V2</strong>: see &quot;Planned in the design, not implemented in V1&quot; above.</p>
+<h3 id="what-the-tool-does-not-do">What the tool does not do</h3>
+<ul>
+<li>Evaluate free-text answers (reports, descriptions)</li>
+<li>Rank models in general, outside the effect of a variation</li>
+<li>Train, fine-tune or correct a model</li>
+<li>Monitor a model in production</li>
+<li>Host or redistribute data</li>
+</ul>
+<h2 id="2-glossary">2. Glossary</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sample</strong></td>
+<td>An image with its question, before any variation.</td>
+</tr>
+<tr>
+<td><strong>Sample ID</strong></td>
+<td>The ID shared by all the variants of the same sample. It allows comparing them face to face (pairing).</td>
+</tr>
+<tr>
+<td><strong>Row ID</strong></td>
+<td>The unique ID of each row (each variant), generated by the tool.</td>
+</tr>
+<tr>
+<td><strong>Axis</strong></td>
+<td>What we vary in order to compare (language, site, image quality).</td>
+</tr>
+<tr>
+<td><strong>Level</strong></td>
+<td>A value that an axis takes (EN, FR, HI for the language axis).</td>
+</tr>
+<tr>
+<td><strong>Reference level</strong></td>
+<td>The level the others are compared to. Optional: without a reference, all pairs of levels are compared.</td>
+</tr>
+<tr>
+<td><strong>Controlled axis</strong></td>
+<td>We modify the same sample, and only one thing changes.</td>
+</tr>
+<tr>
+<td><strong>Observed axis</strong></td>
+<td>The categories already exist in the data (the sites, for example).</td>
+</tr>
+<tr>
+<td><strong>Variant</strong></td>
+<td>A sample at a given level of the controlled axes. Keeps the ID of its sample.</td>
+</tr>
+<tr>
+<td><strong>Role</strong></td>
+<td>What a column is used for (image, label, independent unit…). Declared in <code>experiment.yaml</code>.</td>
+</tr>
+<tr>
+<td><strong>Shift measure</strong></td>
+<td>The shift in answers between the levels of an axis (<code>compare</code>), possibly recomputed within each level of other axes (<code>split_by</code>). Computed at step 5.</td>
+</tr>
+<tr>
+<td><strong>Primary comparison</strong></td>
+<td>Bonus, optional. A comparison declared before running the models (e.g. EN against HI). If primary comparisons are declared, the correction applies only to them and the others are exploratory.</td>
+</tr>
+<tr>
+<td><strong>Task type</strong></td>
+<td>The form of the question and of the answer. V1: yes/no only.</td>
+</tr>
+<tr>
+<td><strong>Run</strong></td>
+<td>One complete execution of <code>experiment.yaml</code> on a set of models, identified by its fingerprint.</td>
+</tr>
+<tr>
+<td><strong>Analysis</strong></td>
+<td>A computation of measures on a run, described by <code>analysis.yaml</code>. A run can have several analyses, without running the models again.</td>
+</tr>
+<tr>
+<td><strong>Answer reader</strong></td>
+<td>What turns the raw answer of a generative model into <code>yes</code> or <code>no</code>: an answer list, a local small LLM, or both.</td>
+</tr>
+<tr>
+<td><strong>Probe</strong></td>
+<td>A simple classifier that tries to guess a column (e.g. the site) from the internal representation of a model.</td>
+</tr>
+<tr>
+<td><strong>Package</strong></td>
+<td>A set of data, rules and configurations built on Core (Med, for example).</td>
+</tr>
+<tr>
+<td><strong>Cell</strong></td>
+<td>A combination of levels of the axes of a measure (e.g. language = HI, site = S1).</td>
+</tr>
+<tr>
+<td><strong>Independent unit</strong></td>
+<td>A group of rows that are not independent of each other (e.g. the images of the same subject). The uncertainty is computed by randomly drawing these units.</td>
+</tr>
+<tr>
+<td><strong>Fingerprint</strong></td>
+<td>A short code computed on a content (table, configuration). It changes as soon as a single value changes.</td>
+</tr>
+<tr>
+<td><strong>Status</strong></td>
+<td>State of an answer: <code>valid</code>, <code>INVALID</code> (unreadable answer) or <code>error</code> (technical failure).</td>
+</tr>
+<tr>
+<td><strong>Variants table</strong></td>
+<td>What is sent to the models: one row per variant, with the exact texts (<code>prompt</code>, or <code>positive_prompt</code> and <code>negative_prompt</code>).</td>
+</tr>
+<tr>
+<td><strong>Results table</strong></td>
+<td>The variants table with the answers: one row per variant × model.</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="3-data-model">3. Data model</h2>
+<h3 id="principle">Principle</h3>
+<ul>
+<li><strong>One big table.</strong> One row = one variant: what we show to the model (an image and a question).</li>
+<li>The variants of the same sample share the same <strong>sample ID</strong>.</li>
+<li>It can be split into several files, as long as the IDs allow gluing the pieces back together.</li>
+<li>A few columns are required. All the others are free, and each can be used as an axis, alone or combined.</li>
+<li>The <strong>configuration</strong> says what each useful column is for (its role). The others are ignored.</li>
+</ul>
+<h3 id="column-roles">Column roles</h3>
+<p>Each role is played by one column of the table. The configuration says which column plays which role: column names are free.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Example column</th>
+<th>Required</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Row ID</td>
+<td><code>id</code></td>
+<td>yes</td>
+<td>Generated by the tool at import</td>
+</tr>
+<tr>
+<td>Sample ID</td>
+<td><code>sample_id</code></td>
+<td>no</td>
+<td>Computed by the tool (see below)</td>
+</tr>
+<tr>
+<td>Image</td>
+<td><code>image</code> (path)</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td>Question</td>
+<td><code>question</code>, or a template defined in the configuration</td>
+<td>if generative models</td>
+<td></td>
+</tr>
+<tr>
+<td>Contrastive sentences</td>
+<td><code>positive_text</code>, <code>negative_text</code></td>
+<td>if contrastive models</td>
+<td>Templates of the <code>task.contrastive</code> block</td>
+</tr>
+<tr>
+<td>Label</td>
+<td><code>label</code>: <code>positive</code>, <code>negative</code> or <code>unknown</code></td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td>Axis</td>
+<td><code>language</code>, <code>site</code>, <code>quality</code></td>
+<td>at least one</td>
+<td>Type in <code>experiment.yaml</code>, reference in <code>analysis.yaml</code></td>
+</tr>
+<tr>
+<td>Independent unit</td>
+<td><code>subject</code></td>
+<td>no</td>
+<td>= sample ID</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>Label</strong>: <code>unknown</code> rows are excluded from the accuracy measures, but kept for the answer-change measures.</li>
+<li><strong>Independent unit</strong>: says which rows are not independent of each other (the images of the same subject). The uncertainty computation randomly draws these units, not the rows. Default: the sample ID.</li>
+</ul>
+<h3 id="sample-id">Sample ID</h3>
+<p>It links the variants of the same sample, to compare them face to face: the same image, with the same question, in EN and in HI.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Where the ID comes from</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Variants created by the tool</td>
+<td>Set by the tool</td>
+</tr>
+<tr>
+<td>Table in wide format (see below)</td>
+<td>One row = one sample</td>
+</tr>
+<tr>
+<td>Imported table in long format</td>
+<td>Provided by the user, otherwise computed</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>Computation rule</strong>: same values in all the columns, except the row ID, the question, the contrastive sentences (<code>positive_text</code>, <code>negative_text</code>), the columns used by the templates (such as <code>{concept}</code>, translated in each language) and the controlled axes.</li>
+<li><strong>Several questions per image</strong>: when leaving out the template columns would put two rows of one sample at the same levels of the controlled axes (one question per concept, for example), these columns stay in the sample ID of those rows: they tell the questions apart. If two rows are still at the same levels, the table is refused (<code>same_levels</code>): their pairs would be random.</li>
+<li><strong>Must be provided</strong> if imported variants have different image files (an image blurred outside the tool, for example): the tool cannot guess which image it comes from.</li>
+<li><strong>Check</strong>: the audit (step 2) shows the number of samples and of variants per sample.</li>
+</ul>
+<h3 id="long-or-wide-format">Long or wide format</h3>
+<p>The tool works in <strong>long format</strong>: one row per variant.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>id</th>
+<th>sample_id</th>
+<th>language</th>
+<th>question</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>s17</td>
+<td>EN</td>
+<td>Is there…?</td>
+</tr>
+<tr>
+<td>2</td>
+<td>s17</td>
+<td>HI</td>
+<td>क्या…?</td>
+</tr>
+</tbody>
+</table></div>
+<p>The <strong>wide format</strong> (one row per sample, one column per level) is accepted as input, then converted to long format at import.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>sample_id</th>
+<th>question_EN</th>
+<th>question_HI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>s17</td>
+<td>Is there…?</td>
+<td>क्या…?</td>
+</tr>
+</tbody>
+</table></div>
+<p>The long format stays readable when axes are crossed (7 languages × 3 image qualities = 21 columns in wide format).</p>
+<h3 id="configuration-two-yaml-files">Configuration (two YAML files)</h3>
+<div class="table"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>When</th>
+<th>Content</th>
+<th>Changing it…</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>experiment.yaml</code></td>
+<td>Before inference</td>
+<td>Data, roles, axes, question, answer reader, models</td>
+<td>Forces the models to run again</td>
+</tr>
+<tr>
+<td><code>analysis.yaml</code></td>
+<td>After inference</td>
+<td>Analyzed run, references, measures, statistics, probe</td>
+<td>Can be run again as often as you like</td>
+</tr>
+</tbody>
+</table></div>
+<p>Full schemas and checking rules: section 7.1.</p>
+<h3 id="generation-of-altered-images-bonus">Generation of altered images (bonus)</h3>
+<p>Not in V1: the <code>generation</code> block will be added to the <code>experiment.yaml</code> schema when it is developed. Optional. The tool creates new rows at step 1, which keep the sample ID of the original row. Only images can be generated.</p>
+<p><strong>Altered images</strong></p>
+<ul>
+<li>Available transformations: blank (<code>blank</code>), shuffle (<code>shuffle</code>, image of another sample), blur (<code>blur</code>), noise (<code>noise</code>), reduced resolution (<code>resolution</code>).</li>
+<li>Each transformation creates a level of the declared axis (e.g. <code>quality: blur</code>). The original rows are at level <code>original</code>.</li>
+<li>The transformed image is created only once per original image.</li>
+<li>Each row that uses this image is duplicated with the transformed image (cartesian product). E.g. if <code>s17</code> has an EN row and an HI row, the blur creates a blur-EN row and a blur-HI row. This way image quality can be crossed with the other axes.</li>
+<li>Parameters and seed are recorded: same configuration → same images.</li>
+</ul>
+<p><strong>Translations</strong></p>
+<ul>
+<li>They are not generated by the tool: each language is an imported variant, present in the table (one row per language, with the same sample ID).</li>
+</ul>
+<h3 id="reading-answers-generative-models">Reading answers (generative models)</h3>
+<p>Two possible readers, declared in the <code>task</code> block of <code>experiment.yaml</code>:</p>
+<ul>
+<li><strong>List</strong> (<code>answers</code>): the raw answer is lowercased, stripped of spaces and punctuation at the start and at the end, then compared to the <code>yes</code> and <code>no</code> lists. The lists are written in the YAML or in a separate file.</li>
+<li><strong>Local small LLM</strong> (<code>reader_llm</code>): it classifies the raw answer as <code>yes</code>, <code>no</code> or <code>unclear</code>. Temperature 0, name and version recorded, answers cached.</li>
+</ul>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Declared</th>
+<th>Reading</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>answers</code> only</td>
+<td>List only</td>
+</tr>
+<tr>
+<td><code>reader_llm</code> only</td>
+<td>Small LLM for all answers</td>
+</tr>
+<tr>
+<td>Both</td>
+<td>List first; small LLM only if the list finds nothing</td>
+</tr>
+<tr>
+<td>Neither</td>
+<td>Default list: <code>yes</code> = [&quot;yes&quot;], <code>no</code> = [&quot;no&quot;]</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>No match in the list, or <code>unclear</code> from the LLM → <code>INVALID</code>.</li>
+</ul>
+<p><strong>Small LLM safeguards</strong></p>
+<ol>
+<li><strong>Traceability</strong>: the <code>decision_source</code> column (<code>list</code> or <code>llm</code>) says where each decision comes from.</li>
+<li><strong>Bias control</strong>: the report shows the share of decisions made by the LLM, per model and per level. An LLM that understands one language less well would otherwise create a false shift.</li>
+<li><strong>Validation</strong>: the accuracy of the LLM is measured language by language on a set of hand-annotated answers (<code>reader_llm.validation</code>). Without this file, the report says &quot;reader not validated&quot;.</li>
+</ol>
+<p>Since the raw answers are stored, the reading can be redone with another reader without running the models again.</p>
+<h3 id="contrastive-models-taskcontrastive-block">Contrastive models (<code>task.contrastive</code> block)</h3>
+<p>A contrastive model (CLIP and similar) does not answer with text: it compares the image to two sentences and says which one fits best.</p>
+<ul>
+<li>Positive sentence: the concept is present (e.g. &quot;a photo showing a circle&quot;).</li>
+<li>Negative sentence: the concept is absent (e.g. &quot;a photo with no circle&quot;).</li>
+<li>The sentences come from the templates of the <code>task.contrastive</code> block, or from the <code>positive_text</code> and <code>negative_text</code> columns. To vary the language, use the columns, one row per language, as for questions.</li>
+<li>The <code>answers</code> block does not apply to these models.</li>
+</ul>
+<h3 id="columns-added-at-step-3">Columns added at step 3</h3>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Content</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>prompt</code></td>
+<td>The exact text sent to the generative models</td>
+<td>We know what the model really read. Nothing is rebuilt later.</td>
+</tr>
+<tr>
+<td><code>positive_prompt</code>, <code>negative_prompt</code></td>
+<td>The two exact sentences sent to the contrastive models</td>
+<td>Same</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="results-table">Results table</h3>
+<p>Produced at step 4: one row per variant × model, with these columns. Physically, <code>results.parquet</code> contains only these outputs; it is linked to the variants by <code>id</code> (section 7.2).</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>model</code></td>
+<td>Model name (<code>models.name</code>); versions in <code>run_log.json</code></td>
+</tr>
+<tr>
+<td><code>run</code></td>
+<td>Run ID</td>
+</tr>
+<tr>
+<td><code>response</code></td>
+<td>Raw answer of the model</td>
+</tr>
+<tr>
+<td><code>decision</code></td>
+<td>Answer as read (<code>yes</code> or <code>no</code>)</td>
+</tr>
+<tr>
+<td><code>decision_source</code></td>
+<td>Generative models: <code>list</code> or <code>llm</code> (the reader that produced the decision)</td>
+</tr>
+<tr>
+<td><code>reader_response</code></td>
+<td>Raw answer of the small LLM, if it was used</td>
+</tr>
+<tr>
+<td><code>score_pos</code>, <code>score_neg</code></td>
+<td>Contrastive models: score of each sentence</td>
+</tr>
+<tr>
+<td><code>margin</code></td>
+<td>Contrastive models: <code>score_pos − score_neg</code></td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td><code>valid</code>, <code>INVALID</code> (unreadable answer) or <code>error</code> (technical failure)</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="import-of-external-results-bonus">Import of external results (bonus)</h3>
+<p>A results table produced elsewhere can be imported directly. The requirements are relaxed, because the tool does not run any model:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Role or column</th>
+<th>At import</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Label, axis, <code>decision</code>, <code>model</code></td>
+<td>Required</td>
+</tr>
+<tr>
+<td>Sample ID, independent unit</td>
+<td>Optional (same defaults)</td>
+</tr>
+<tr>
+<td>Image, question, <code>response</code></td>
+<td>Optional (kept for traceability)</td>
+</tr>
+<tr>
+<td>Row ID, <code>run</code></td>
+<td>Generated at import</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>Deduced: <code>INVALID</code> if <code>decision</code> is empty or is neither <code>yes</code> nor <code>no</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>These results are marked &quot;external, not verified&quot; in the report.</p>
+<h3 id="example">Example</h3>
+<p>Table (the <code>question</code> column is omitted: it contains the question in the language of the row):</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>id</th>
+<th>sample_id</th>
+<th>image</th>
+<th>concept</th>
+<th>language</th>
+<th>quality</th>
+<th>label</th>
+<th>subject</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>s17</td>
+<td>img_17.png</td>
+<td>circle</td>
+<td>EN</td>
+<td>original</td>
+<td>positive</td>
+<td>p42</td>
+</tr>
+<tr>
+<td>2</td>
+<td>s17</td>
+<td>img_17.png</td>
+<td>circle</td>
+<td>HI</td>
+<td>original</td>
+<td>positive</td>
+<td>p42</td>
+</tr>
+<tr>
+<td>3</td>
+<td>s17</td>
+<td>img_17_blur.png</td>
+<td>circle</td>
+<td>EN</td>
+<td>blur</td>
+<td>positive</td>
+<td>p42</td>
+</tr>
+<tr>
+<td>4</td>
+<td>s42</td>
+<td>img_42.png</td>
+<td>circle</td>
+<td>EN</td>
+<td>original</td>
+<td>unknown</td>
+<td>p08</td>
+</tr>
+<tr>
+<td>5</td>
+<td>s42</td>
+<td>img_42.png</td>
+<td>circle</td>
+<td>HI</td>
+<td>original</td>
+<td>unknown</td>
+<td>p08</td>
+</tr>
+</tbody>
+</table></div>
+<p>Configuration:</p>
+<pre><code class="language-yaml"># experiment.yaml
+schema_version: 1
+data: images.parquet
+roles:
+  sample_id: sample_id      # needed here because of row 3
+  unit: subject
+axes:
+  language: {type: controlled}
+  quality:  {type: controlled}
+task:
+  type: yes_no
+  answers:
+    yes: [&quot;yes&quot;, &quot;हाँ&quot;]
+    no:  [&quot;no&quot;, &quot;नहीं&quot;]
+models:
+  - {name: qwen2.5-vl-7b, adapter: vlmevalkit}
+</code></pre>
+<pre><code class="language-yaml"># analysis.yaml
+schema_version: 1
+run: runs/&lt;run&gt;
+axes:
+  language: {reference: EN}
+  quality:  {reference: original}
+</code></pre>
+<p>The <code>image</code>, <code>question</code> and <code>label</code> columns already carry the name of their role: nothing to declare in <code>roles</code>.</p>
+<p>Reading:</p>
+<ul>
+<li><strong>Samples</strong>: <code>s17</code> groups rows 1, 2 and 3; <code>s42</code> groups rows 4 and 5.</li>
+<li><strong>Why provide <code>sample_id</code></strong>: row 3 has a different image file. Without this column, the tool could not link it to <code>s17</code>. If the blur had been generated by the tool (<code>generation</code> block), it would not be needed.</li>
+<li><strong>Comparisons</strong>: 1 against 2 = effect of language; 1 against 3 = effect of blur.</li>
+<li><strong>Rows 4 and 5</strong>: label <code>unknown</code>, so only for answer change.</li>
+<li><strong>Uncertainty</strong>: computed by randomly drawing the subjects (<code>p42</code>, <code>p08</code>), not the rows.</li>
+</ul>
+<h3 id="file-formats">File formats</h3>
+<ul>
+<li>Tables: Parquet (CSV accepted as input)</li>
+<li>Configuration: YAML (<code>experiment.yaml</code>, <code>analysis.yaml</code>), read as YAML 1.2</li>
+<li><em>Bonus</em> — Converters to and from the VLMEvalKit TSV</li>
+</ul>
+<h2 id="4-specification-by-step">4. Specification by step</h2>
+<p>Each step follows the same description: role, inputs, outputs, rules, edge cases, tests.</p>
+<pre><code>1. Data → 2. Audit → 3. Axes and task → 4. Inference → 5. Statistics → 6. Report
+</code></pre>
+<h3 id="step-1--data">Step 1 — Data</h3>
+<p><strong>Role</strong>: turn the user's dataset into a valid VLMShift table (and, as a bonus, create the requested altered images).</p>
+<p><strong>Inputs</strong></p>
+<ul>
+<li>A CSV or Parquet file</li>
+<li><code>experiment.yaml</code> (section 7.1)</li>
+</ul>
+<p><strong>Outputs</strong></p>
+<ul>
+<li>The VLMShift table (Parquet), with:
+<ul>
+<li>a generated <strong>row ID</strong>: a unique code created by the tool (e.g. <code>l_3f9a1c0e7b2d4a58</code>, computation in 7.4), which designates the row everywhere afterwards;</li>
+<li>a <strong>sample ID</strong>, provided or computed (see section 3);</li>
+<li><em>Bonus</em> — the generated altered images, if requested.</li>
+</ul>
+</li>
+<li>The issues (<code>issues.parquet</code>): excluded rows and the reason</li>
+<li>The <strong>table fingerprint</strong>: a short code computed from all its content. If a single value changes, the fingerprint changes. It proves that we are working on exactly the same data.</li>
+</ul>
+<p><strong>Rules</strong></p>
+<p><em>Import</em></p>
+<ul>
+<li><em>Bonus</em> — Convert wide format to long format, if needed.</li>
+<li>Generate the row ID from its content, not from its position (computation in section 7.4).
+<ul>
+<li>Importing the same file again, even with the rows in another order, gives the same IDs.</li>
+<li>Results already obtained therefore stay attached to the right rows.</li>
+</ul>
+</li>
+<li>Keep the original ID if there is one, after checking that it is non-empty and unique.</li>
+<li>Check that each role marked required in section 3 has its column.</li>
+<li>Rename the role columns to their standard name (e.g. <code>outcome</code> → <code>label</code>). These names are reserved: a free column cannot use them.</li>
+<li>Check that each image exists and compute its fingerprint.</li>
+<li>Accept only <code>positive</code>, <code>negative</code> or <code>unknown</code> in the label.</li>
+<li>Compute the sample ID if it is not provided (rule in section 3).</li>
+</ul>
+<p><em>Generation (bonus, if the <code>generation</code> block is present)</em></p>
+<ul>
+<li>Altered images: one transformed image per original image and per transformation; each row that uses the original image is duplicated (rule in section 3). Parameters and seed recorded.</li>
+<li>The number of rows produced (and therefore of model calls) is estimated and shown before generation.</li>
+</ul>
+<p><strong>Edge cases</strong></p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Required role without a column</td>
+<td>Stop, clear message</td>
+</tr>
+<tr>
+<td>Original ID empty or duplicated</td>
+<td>Warning. The generated row ID is still used</td>
+</tr>
+<tr>
+<td>Image not found</td>
+<td>Row flagged and excluded</td>
+</tr>
+<tr>
+<td>Empty label or other value</td>
+<td>Error. Never converted to <code>negative</code></td>
+</tr>
+<tr>
+<td>A sample contains two different independent units (e.g. two subjects)</td>
+<td>Error</td>
+</tr>
+<tr>
+<td>A sample contains different labels</td>
+<td>Error</td>
+</tr>
+<tr>
+<td>Two variants of a sample at the same level of all the axes</td>
+<td>Flagged</td>
+</tr>
+<tr>
+<td>Strictly identical rows</td>
+<td>Flagged, only one kept</td>
+</tr>
+<tr>
+<td>Axis with a single level</td>
+<td>Flagged: no comparison possible</td>
+</tr>
+<tr>
+<td>Two different contents with the same ID (collision, 7.4)</td>
+<td>Error</td>
+</tr>
+<tr>
+<td><em>Bonus</em> — Shuffled image identical to the original</td>
+<td>Forbidden: always the image of another sample</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Tests</strong></p>
+<ul>
+<li>A small dataset built on purpose, with one example of each edge case. We check that each one is flagged.</li>
+<li>Two imports of the same file, rows shuffled, give the same IDs and the same fingerprint.</li>
+<li><em>Bonus</em> — The same dataset in wide format and in long format gives the same table.</li>
+<li><em>Bonus</em> — Same generation configuration run twice: same images, same rows.</li>
+</ul>
+<h3 id="step-2--audit">Step 2 — Audit</h3>
+<p><strong>Role</strong>: describe how the dataset is distributed, before running the models. Changes nothing.</p>
+<p><strong>Inputs</strong></p>
+<ul>
+<li>The VLMShift table</li>
+<li><code>experiment.yaml</code> (axes, roles)</li>
+</ul>
+<p><strong>Outputs</strong></p>
+<ul>
+<li>The counts per axis and per level (<code>audit/counts.parquet</code>, section 7.2)</li>
+<li><em>Bonus</em> — Figures</li>
+</ul>
+<p><strong>Rules</strong></p>
+<ul>
+<li>For each level of each axis: number of rows, samples and independent units; <code>positive</code>, <code>negative</code>, <code>unknown</code> labels; proportion of positives.</li>
+<li><em>Bonus</em> — Crosstabs: distribution of each axis against the other declared columns.</li>
+<li>Samples: number, variants per sample, incomplete samples (missing levels).</li>
+<li><em>Bonus</em> — Minimum detectable shift for each planned comparison (method in section 5).</li>
+</ul>
+<p><strong>Edge cases</strong></p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Empty cell or cell below the count threshold</td>
+<td>Flagged (threshold: 30 independent units)</td>
+</tr>
+<tr>
+<td>Numeric column (age)</td>
+<td>Split into quartiles (configurable bounds as a bonus)</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Tests</strong></p>
+<ul>
+<li>Synthetic dataset with a known distribution: the figures produced are exactly the expected ones.</li>
+</ul>
+<h3 id="step-3--axes-and-task">Step 3 — Axes and task</h3>
+<p><strong>Role</strong>: prepare exactly what will be sent to the models.</p>
+<p><strong>Inputs</strong></p>
+<ul>
+<li>The VLMShift table (with its variants)</li>
+<li><code>experiment.yaml</code>: <code>task</code>, <code>axes</code></li>
+</ul>
+<p><strong>Outputs</strong></p>
+<ul>
+<li>The variants table, with the columns <code>prompt</code>, <code>positive_prompt</code> and <code>negative_prompt</code> (section 3), stored with its fingerprint</li>
+</ul>
+<p><strong>Rules</strong></p>
+<p><em>Final question</em></p>
+<ul>
+<li>For each row, the tool writes the exact text sent to the model in the <code>prompt</code> column.</li>
+<li>Example: the template &quot;Is there a {concept} in this image? Answer yes or no.&quot; with <code>concept = circle</code> gives &quot;Is there a circle in this image? Answer yes or no.&quot;.</li>
+<li>This text is stored, not recomputed: we can always check what the model read, and all the models receive exactly the same text.</li>
+<li>For contrastive models, same principle: the two sentences are written in <code>positive_prompt</code> and <code>negative_prompt</code>.</li>
+</ul>
+<p><em>Axes</em></p>
+<ul>
+<li>Each declared axis must match a column.</li>
+<li>The axes declared here are the ones the shift measures can use (step 5).</li>
+</ul>
+<p><em>Primary comparisons (bonus)</em></p>
+<ul>
+<li>These are the comparisons that answer the question of the study, chosen before running the models (e.g. EN against HI).</li>
+<li>Without them, the correction for multiple comparisons applies to all the comparisons of each measure (section 5.5).</li>
+<li>With them, the correction applies only to these comparisons: it is lighter, so a smaller effect can be detected. The others are marked &quot;exploratory&quot;.</li>
+<li>They will be declared in <code>experiment.yaml</code>, so they are frozen before inference: declaring them in <code>analysis.yaml</code> would allow choosing them after seeing the results.</li>
+</ul>
+<p><strong>Edge cases</strong></p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Template slot without a matching column</td>
+<td>Error</td>
+</tr>
+<tr>
+<td>Contrastive model without positive and negative sentences</td>
+<td>Error</td>
+</tr>
+<tr>
+<td>Empty value to fill the template</td>
+<td>Row excluded and flagged</td>
+</tr>
+<tr>
+<td>Axis declared without a column</td>
+<td>Error</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Tests</strong></p>
+<ul>
+<li>Same configuration run twice: same variants table (same fingerprint).</li>
+<li>Templates filled correctly on known examples.</li>
+</ul>
+<h3 id="step-4--inference">Step 4 — Inference</h3>
+<p><strong>Role</strong>: get the answer of each model for each variant.</p>
+<p><strong>Inputs</strong></p>
+<ul>
+<li>The variants table</li>
+<li><code>experiment.yaml</code>: <code>models</code>, <code>inference</code>, <code>task</code> (answer reader)</li>
+</ul>
+<p><strong>Outputs</strong></p>
+<ul>
+<li>The results table (section 3)</li>
+<li>The run log: versions, dates, parameters, fingerprints</li>
+<li>The vectors of the models with <code>embeddings: true</code> (<code>embeddings.parquet</code>)</li>
+<li>The validation of the small LLM (<code>reader_validation.parquet</code>), if <code>reader_llm.validation</code> is declared</li>
+</ul>
+<p><strong>Rules</strong></p>
+<ul>
+<li>Common interface for all models. Generative through VLMEvalKit, contrastive through our adapters.</li>
+<li>Generative: raw answer stored, then read by the list and/or the small LLM (rules in section 3). No decision → <code>INVALID</code>. Source of the decision in <code>decision_source</code>.</li>
+<li>Contrastive: one score for the positive sentence, one for the negative sentence. Decision = <code>yes</code> if the positive sentence wins, <code>no</code> otherwise. Tie → <code>INVALID</code>. Scores and margin stored.</li>
+<li>Deterministic decoding by default (temperature 0).</li>
+<li><em>Bonus</em> — API: model version and call date recorded, answers cached.</li>
+<li>Resume: a variant already processed is not run again.</li>
+<li>Cache per model: one folder per model and settings, in <code>workspace/cache/</code>. Each output is keyed by the question: the image fingerprint and the exact texts sent. A question already asked is never asked again, whatever the run, the table, the labels or the axes (e.g. adding an 11th model, a model of another kind, or a corrected label). The cache keeps the raw outputs (answers, scores, vectors); the reading of the answers is redone if the reader changes.</li>
+<li>If <code>models.revision</code> is not set, the cache cannot see a change of weights: set it for reference runs.</li>
+<li><em>Bonus</em> — External import: relaxed requirements (section 3), results marked &quot;external&quot;.</li>
+<li>Models with <code>embeddings: true</code>: they also provide the vector of each image (<code>embed</code> method), stored in <code>embeddings.parquet</code> and linked to the image (<code>image_hash</code>). An image used by several rows is computed only once.</li>
+</ul>
+<p><strong>Edge cases</strong></p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model with <code>embeddings: true</code> without an <code>embed</code> method</td>
+<td>Error</td>
+</tr>
+<tr>
+<td>Small LLM not found or impossible to load</td>
+<td>Stop before inference</td>
+</tr>
+<tr>
+<td>Technical failure: the adapter raises <code>ModelError</code> (7.3)</td>
+<td>New attempt (<code>inference.retries</code>), then status <code>error</code> (different from <code>INVALID</code>)</td>
+</tr>
+<tr>
+<td><em>V2</em> — Model that does not read text (image classifier), on an axis that only changes the question</td>
+<td>&quot;Not applicable&quot;</td>
+</tr>
+<tr>
+<td>Equivalent answer worded differently (synonym, other language)</td>
+<td>Read by the list; otherwise by the small LLM if declared</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Tests</strong></p>
+<ul>
+<li>Answer readers (list and small LLM) tested on a set of hand-annotated answers, language by language. With <code>reader_llm.validation</code>, this test is redone on the actual infrastructure, before inference.</li>
+<li>Fake model with known answers: the results table is the expected one.</li>
+<li>Simulated interruption: the resume creates no duplicate and no gap.</li>
+</ul>
+<h3 id="step-5--statistics">Step 5 — Statistics</h3>
+<p><strong>Role</strong>: compute each declared shift measure, with its uncertainty. Exact formulas in section 5.</p>
+<p><strong>Inputs</strong></p>
+<ul>
+<li><code>results.parquet</code>, linked to <code>variants.parquet</code> by <code>id</code> (and <code>embeddings.parquet</code> for the probe)</li>
+<li><code>analysis.yaml</code> (section 7.1)</li>
+</ul>
+<p><strong>Outputs</strong></p>
+<ul>
+<li>The metrics table (<code>metrics.parquet</code>): one row per figure, with its counts</li>
+<li>The probe results (<code>probes.parquet</code>)</li>
+</ul>
+<p><strong>Rules</strong></p>
+<p><em>Shift measures</em></p>
+<ul>
+<li>A shift measure computes the shift in answers between the levels of an axis (<code>compare</code>, e.g. <code>language</code>: EN, FR, HI…).</li>
+<li>With <code>split_by</code>, the same computation is redone within each level of other axes (e.g. <code>split_by: [site]</code>: the effect of language on each site). This is the site × language matrix.</li>
+<li>If a reference is declared for the axis, each level is compared to it; otherwise, all pairs.</li>
+<li>Several measures can be computed on the same inference: the models are queried only once (step 4).</li>
+<li>Without a <code>measures</code> block: one <code>compare</code> measure per declared axis, without split.</li>
+<li>A new analysis (<code>analysis.yaml</code>) can be run after inference, without running the models again, if it uses only columns that are already present (e.g. an observed axis such as the site).</li>
+<li>A measure on a controlled axis is possible only if its variants were sent to the models.</li>
+<li>Latent space probe: for each column of <code>latent.targets</code> and each model with vectors (section 5.7).</li>
+</ul>
+<p><em>Data used by each computation</em></p>
+<ul>
+<li><strong>Pairing</strong>: for a controlled axis, only the samples present in all the compared levels are used. The excluded ones are counted.</li>
+<li><strong>Rows taken into account</strong>:
+<ul>
+<li>accuracy: <code>positive</code> and <code>negative</code> rows only;</li>
+<li>answer change: all valid rows, <code>unknown</code> included;</li>
+<li><code>INVALID</code>: two computations (counted as an error, or excluded);</li>
+<li><code>error</code>: excluded, but counted in the coverage.</li>
+</ul>
+</li>
+<li><strong>Counts</strong>: each figure carries the number of rows, samples, independent units, valid answers and <code>INVALID</code>.</li>
+</ul>
+<p>Tests, intervals and corrections: see section 5.</p>
+<p><strong>Edge cases</strong></p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Measure that uses an axis not declared in <code>experiment.yaml</code></td>
+<td>Error</td>
+</tr>
+<tr>
+<td>Reference or level absent from the data</td>
+<td>Error</td>
+</tr>
+<tr>
+<td><code>latent</code> block with no model that has vectors</td>
+<td>Error</td>
+</tr>
+<tr>
+<td>Measure on a controlled axis whose variants were not sent to the models</td>
+<td>Error</td>
+</tr>
+<tr>
+<td>Metric that cannot be computed (sensitivity with no positive)</td>
+<td>&quot;Not estimable&quot;, never 0</td>
+</tr>
+<tr>
+<td>Too few units for the bootstrap</td>
+<td>&quot;Not estimable&quot;</td>
+</tr>
+<tr>
+<td>Model that always gives the same answer</td>
+<td>Flagged</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Tests</strong></p>
+<ul>
+<li>Simulated data with a known effect: the effect is recovered, and the 95% interval contains the true value about 95 times out of 100.</li>
+<li>Degenerate cases: a single row, only <code>INVALID</code>, a single class.</li>
+</ul>
+<h3 id="step-6--report">Step 6 — Report</h3>
+<p><strong>Role</strong>: present the results in a readable, traceable and reproducible way.</p>
+<p><strong>Inputs</strong></p>
+<ul>
+<li><code>metrics.parquet</code>, <code>probes.parquet</code>, <code>audit/counts.parquet</code>, <code>reader_validation.parquet</code>, <code>issues.parquet</code>, <code>run_log.json</code>, <code>experiment.yaml</code> and <code>analysis.yaml</code></li>
+</ul>
+<p><strong>Outputs</strong></p>
+<ul>
+<li>The tables (CSV, Parquet), with their counts</li>
+<li><em>Bonus</em> — An HTML report and figures (SVG, PDF)</li>
+<li><em>Bonus</em> — A reproduction archive: configurations, fingerprints, versions</li>
+</ul>
+<p><strong>Rules</strong></p>
+<ul>
+<li>Each figure is shown with its counts and its corrected interval; the uncorrected 95% interval is shown next to it, marked &quot;exploratory&quot;.</li>
+<li>Sections: summary, audit, results per measure, latent space probe, reading of answers, coverage limits.</li>
+<li>Reading of answers: share of decisions made by the small LLM, per model and per level, and accuracy of the LLM per language on the annotated set.</li>
+<li><em>Bonus</em> — If primary comparisons are declared, they are presented apart from the exploratory analyses.</li>
+<li><em>Bonus</em> — Imported results marked &quot;external, not verified&quot;.</li>
+<li>Usage notice: <code>report.notice</code> of <code>analysis.yaml</code>, shown at the top of the report.</li>
+<li>Color never carries the meaning of a figure alone.</li>
+</ul>
+<p><strong>Edge cases</strong></p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Value not estimable</td>
+<td>Shown as such</td>
+</tr>
+<tr>
+<td>Incomplete run</td>
+<td>Report produced, partial coverage flagged</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Tests</strong></p>
+<ul>
+<li>Each figure in the report is identical to the one in the metrics table.</li>
+<li><em>Bonus</em> — Regenerating the report from the archive gives the same report.</li>
+</ul>
+<h2 id="5-statistical-specification">5. Statistical specification</h2>
+<h3 id="50-notation">5.0 Notation</h3>
+<p>All formulas are given for <strong>one model</strong> and <strong>one shift measure</strong>.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A = (a₁, …, a_k)</td>
+<td>Axes of the measure</td>
+</tr>
+<tr>
+<td>c</td>
+<td>A cell: a combination of levels of the axes (e.g. language = HI, site = S1)</td>
+</tr>
+<tr>
+<td>L_c</td>
+<td>Rows of c with status <code>valid</code></td>
+</tr>
+<tr>
+<td>T_c</td>
+<td>Rows of c, excluding status <code>error</code></td>
+</tr>
+<tr>
+<td>yᵢ</td>
+<td>Label: 1 = <code>positive</code>, 0 = <code>negative</code>, ∅ = <code>unknown</code></td>
+</tr>
+<tr>
+<td>ŷᵢ</td>
+<td>Model decision: 1 = <code>yes</code>, 0 = <code>no</code></td>
+</tr>
+<tr>
+<td>P_c, N_c</td>
+<td>Rows of L_c with yᵢ = 1, with yᵢ = 0</td>
+</tr>
+<tr>
+<td>e</td>
+<td>A sample (sample ID)</td>
+</tr>
+<tr>
+<td>u</td>
+<td>An independent unit</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Handling of <code>INVALID</code></strong>: each metric is computed twice.</p>
+<ul>
+<li><em>Valid</em>: <code>INVALID</code> rows are excluded (L_c as defined).</li>
+<li><em>Strict</em>: for the accuracy metrics (Sens, Spec, BA), an <code>INVALID</code> counts as a wrong answer (ŷᵢ = 1 − yᵢ). For answer change, a pair that contains an <code>INVALID</code> counts as a change.</li>
+<li>The yes rate is always computed on valid answers; the <code>INVALID</code> rate has only one version.</li>
+</ul>
+<h3 id="51-base-metrics-per-cell">5.1 Base metrics (per cell)</h3>
+<p>They describe the behavior of the model in a single cell. They do not measure a shift: they are used to compute it in 5.2.</p>
+<pre><code class="language-text">Sensitivity         Sens(c)  = Σ_{i∈P_c} ŷᵢ / |P_c|
+Specificity         Spec(c)  = Σ_{i∈N_c} (1 − ŷᵢ) / |N_c|
+Balanced accuracy   BA(c)    = (Sens(c) + Spec(c)) / 2
+Yes rate            Yes(c)   = Σ_{i∈L_c} ŷᵢ / |L_c|
+INVALID rate        Inv(c)   = |{i ∈ T_c : INVALID}| / |T_c|
+</code></pre>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>What it measures</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sens</td>
+<td>Among the present cases, the share the model detects. Low = it misses cases.</td>
+</tr>
+<tr>
+<td>Spec</td>
+<td>Among the absent cases, the share the model recognizes as absent. Low = false alarms.</td>
+</tr>
+<tr>
+<td>BA</td>
+<td>Overall performance, giving the same weight to present and absent cases. Does not depend on the proportion of present cases.</td>
+</tr>
+<tr>
+<td>Yes</td>
+<td>Tendency of the model to answer &quot;yes&quot;. Does not use the labels.</td>
+</tr>
+<tr>
+<td>Inv</td>
+<td>Share of the answers that the model does not give in the requested form.</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="52-shift-metrics">5.2 Shift metrics</h3>
+<p>A shift = a change in the behavior of the model between two levels a (reference) and b of an axis.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Shift metric</th>
+<th>Question</th>
+<th>Labels</th>
+<th>Axis type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Δ_BA (detail: Δ_Sens, Δ_Spec)</td>
+<td>Does the model do worse?</td>
+<td>yes</td>
+<td>all</td>
+</tr>
+<tr>
+<td>Δ_Yes</td>
+<td>Does its tendency to answer &quot;yes&quot; change?</td>
+<td>no</td>
+<td>all</td>
+</tr>
+<tr>
+<td>Δ_Inv</td>
+<td>Does it still answer as requested?</td>
+<td>no</td>
+<td>all</td>
+</tr>
+<tr>
+<td>Answer change (detail: yes → no, no → yes)</td>
+<td>Does it change its mind on the same samples?</td>
+<td>no</td>
+<td>controlled</td>
+</tr>
+<tr>
+<td><em>Bonus</em> — Interaction I (5.3)</td>
+<td>Is the shift the same everywhere?</td>
+<td>depends on the metric</td>
+<td>combination of axes</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Metric shift</strong> (Δ_BA, Δ_Yes, Δ_Inv)</p>
+<p>For a metric M and two levels a (reference) and b of an axis, the other axes being fixed:</p>
+<pre><code class="language-text">Δ_M(b, a) = M(b) − M(a)
+</code></pre>
+<ul>
+<li>Δ measures by how much M changes between a and b. Negative for BA = the model does worse at level b.</li>
+<li>Δ_Sens and Δ_Spec are given as detail of Δ_BA, to see where the shift comes from (missed cases or false alarms).</li>
+<li>With a reference: each level against the reference. Without a reference: all pairs.</li>
+<li><strong>Controlled axis</strong>: M(a) and M(b) are computed on the same samples E_ab (those that have a valid row at both levels).</li>
+</ul>
+<p><strong>Answer change</strong> (controlled axis only)</p>
+<p>For e ∈ E_ab, let ŷₑᵃ and ŷₑᵇ be the decisions at the two levels.</p>
+<pre><code class="language-text">Chg(a, b) = (n₁₀ + n₀₁) / |E_ab|
+    n₁₀ = |{e : ŷₑᵃ = 1, ŷₑᵇ = 0}|        (yes → no)
+    n₀₁ = |{e : ŷₑᵃ = 0, ŷₑᵇ = 1}|        (no → yes)
+</code></pre>
+<ul>
+<li>Chg measures the share of samples whose answer changes between a and b. 0 = identical answers, whether right or wrong.</li>
+<li>The n₁₀ / n₀₁ detail gives the direction of the change.</li>
+<li>Does not use the labels: <code>unknown</code> rows are included.</li>
+</ul>
+<h3 id="53-combination-of-axes">5.3 Combination of axes</h3>
+<p>Measure on two axes: the <code>compare</code> axis whose effect we measure (levels a, b) and a <code>split_by</code> axis used for splitting (levels g, h).</p>
+<pre><code class="language-text">Effect per split level   Δ_M(b, a | g)
+Interaction (bonus)      I_M(g, h) = Δ_M(b, a | g) − Δ_M(b, a | h)
+</code></pre>
+<ul>
+<li>Δ_M(b, a | g) measures the shift between a and b, computed only within level g of the split (e.g. the effect of language on site S1).</li>
+<li>I_M measures whether this shift differs from one split level to another (e.g. does language penalize more on S1 than on S2?).</li>
+<li>I_M = 0: the effect is the same in g and in h.</li>
+<li>More than two axes: same principle, the effect is computed within each combination of the split axes.</li>
+</ul>
+<h3 id="54-uncertainty-bootstrap">5.4 Uncertainty (bootstrap)</h3>
+<p>For any statistic θ (a metric, a shift, an interaction):</p>
+<ol>
+<li>Randomly draw, with replacement, as many independent units as there are.</li>
+<li>Keep all the rows of the drawn units (a unit drawn twice counts twice).</li>
+<li>Recompute θ → θ*.</li>
+<li>Repeat R times.</li>
+<li>95% interval: 2.5% and 97.5% percentiles of the θ*.</li>
+</ol>
+<ul>
+<li>R = <code>stats.bootstrap</code> (2000 by default), seed <code>stats.seed</code>, recorded.</li>
+<li>A sample belongs to a single unit (checked at step 1): pairs stay together.</li>
+</ul>
+<h3 id="55-significance-and-multiple-comparisons">5.5 Significance and multiple comparisons</h3>
+<p><strong>Rule</strong></p>
+<ul>
+<li>A shift is <strong>significant</strong> if its interval (5.4) does not contain 0.</li>
+<li>With m comparisons, each interval is computed at level 1 − α/m instead of 1 − α (Bonferroni correction). α = <code>stats.alpha</code> (0.05 by default).</li>
+<li>The uncorrected 95% intervals are also computed and shown as <strong>exploratory</strong>: they are not used to decide significance.</li>
+<li><strong>Value of m</strong>:
+<ul>
+<li>by default, the number of comparisons of a measure for a model, <strong>all <code>split_by</code> cells included</strong> (e.g. 7 languages, reference EN → 6 comparisons; split over 11 sites → m = 66 → 99.92% intervals);</li>
+<li>if primary comparisons are declared: their number (e.g. 3 → 98.3% intervals). The other comparisons stay at 95% and are marked &quot;exploratory&quot;.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Option: classical tests</strong> (controlled axis, yes/no answers)</p>
+<p>Reported for information. They are not used to decide significance.</p>
+<pre><code class="language-text">2 levels — exact McNemar:
+    p = min(1, 2 · P(X ≤ min(n₁₀, n₀₁)))     with X ~ Binomial(n₁₀ + n₀₁, 1/2)
+
+k levels — Cochran's Q:
+    Q = (k − 1) · (k · Σⱼ Cⱼ² − N²) / (k · N − Σₑ Rₑ²)     ~ χ²(k − 1)
+    Cⱼ = number of &quot;yes&quot; at level j
+    Rₑ = number of &quot;yes&quot; of sample e
+    N  = Σⱼ Cⱼ
+</code></pre>
+<ul>
+<li>McNemar tests whether the yes → no and no → yes changes are unbalanced. Cochran does the same for more than two levels.</li>
+<li>Computed only if each independent unit contains a single sample.</li>
+</ul>
+<h3 id="56-non-estimable-cases-and-minimum-detectable-shift">5.6 Non-estimable cases and minimum detectable shift</h3>
+<p><strong>Not estimable</strong> (shown as such, never 0) if:</p>
+<ul>
+<li>the denominator of the metric is zero (e.g. |P_c| = 0 for Sens);</li>
+<li>fewer than n_min independent units in a cell (default n_min = 30, adjustable with <code>stats.min_units</code> in <code>analysis.yaml</code>).</li>
+</ul>
+<p><strong>Minimum detectable shift</strong> (bonus, audit of step 2), with z = z₁₋α/₂ + z₁₋β ≈ 2.80 (α = 0.05, power 80%), and n the number of independent units:</p>
+<pre><code class="language-text">Observed axis     MDE ≈ z · √( p(1 − p) · (1/n_a + 1/n_b) )
+                  p = expected proportion (default: the one observed on the whole table)
+
+Controlled axis   MDE ≈ z · √( d / n )
+                  d = expected proportion of answer changes (default 10%)
+</code></pre>
+<h3 id="57-latent-space-probe">5.7 Latent space probe</h3>
+<p><strong>Question</strong>: is a column (e.g. the site) readable in the internal representation of a model? If so, the model has encoded this information and may use it instead of the image content.</p>
+<p><strong>V1 scope</strong>: contrastive models with <code>embeddings: true</code>, image vector. VLMEvalKit does not give access to the vectors of generative models.</p>
+<p><strong>Computation</strong>, for each model and each target column of <code>latent.targets</code>:</p>
+<ol>
+<li>Inputs: the vector vᵢ of each image and the value of the target column. For the label, only <code>positive</code> and <code>negative</code> rows are kept.</li>
+<li>An image appears only once, even if it is used by several rows.</li>
+<li>Simple classifier (logistic regression) that predicts the target value from vᵢ.</li>
+<li>K-fold cross-validation (<code>latent.folds</code>, 5 by default), <strong>split by independent unit</strong>: the same unit is never in both training and test (no leakage).</li>
+<li>Result: the balanced accuracy of the probe on the test folds. Interval: bootstrap by independent unit on these test predictions, without retraining the probe (5.4).</li>
+</ol>
+<p><strong>Noise floor</strong>: the same probe, trained on target values randomly shuffled (average of 5 shuffles, seed <code>stats.seed</code>). Only a score clearly above this floor counts.</p>
+<pre><code class="language-text">Probe(target, model) = BA of the probe − BA of the probe on shuffled values
+</code></pre>
+<ul>
+<li>Chance: 1 / number of different values of the target.</li>
+<li>A successful probe shows that the information is present, not that the model uses it.</li>
+<li>Uses: compare models (which one encodes the site the least?); compare two targets for one model (does it encode the site more than the label?).</li>
+<li>Probing a column that changes the text (the language) makes no sense: the probe works on the image vector.</li>
+</ul>
+<h2 id="6-architecture">6. Architecture</h2>
+<p>What each step does is described in section 4. Here: <strong>where this work lives in the code</strong>, and <strong>where to plug in an extension</strong>.</p>
+<h3 id="61-general-folder-tree">6.1 General folder tree</h3>
+<pre><code class="language-text">vlmshift/
+├── src/vlmshift/      Core: the Python library
+├── packages/         Packages built on Core (e.g. med/)
+├── tests/             Automatic tests
+├── examples/          POPE mini: the demo, on real photos with published results
+├── environments/      One environment per model family
+└── docs/              Design and decision log
+</code></pre>
+<h3 id="62-core-srcvlmshift">6.2 Core (<code>src/vlmshift/</code>)</h3>
+<pre><code class="language-text">src/vlmshift/
+├── config/        Read and check the YAML configuration
+├── data/          Step 1 — Data
+├── audit/         Step 2 — Audit
+├── variants/      Step 3 — Axes and task
+├── inference/     Step 4 — Inference
+├── stats/         Step 5 — Statistics
+├── report/        Step 6 — Report
+├── tasks/         Task types (used by steps 3, 4 and 5)
+├── extensions.py  Adapter registry
+└── cli.py         Command line
+</code></pre>
+<p>One folder per step: the code of a step is in the same place as its specification.</p>
+<h4 id="config"><code>config/</code></h4>
+<p><strong>Goal</strong>: turn the YAML files into checked objects, used by all the steps.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>schema.py</code></td>
+<td>Schemas of <code>experiment.yaml</code> and <code>analysis.yaml</code>: keys, types, default values, rules (section 7.1)</td>
+</tr>
+<tr>
+<td><code>load.py</code></td>
+<td>Reads a YAML (YAML 1.2), checks it, computes its fingerprint</td>
+</tr>
+</tbody>
+</table></div>
+<h4 id="data--step-1"><code>data/</code> — Step 1</h4>
+<p><strong>Goal</strong>: produce the valid VLMShift table (and, as a bonus, its altered images).</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>File or folder</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>io.py</code></td>
+<td>Read CSV and Parquet; <em>bonus</em>: convert wide format to long format</td>
+</tr>
+<tr>
+<td><code>ids.py</code></td>
+<td>Compute the row ID and the sample ID</td>
+</tr>
+<tr>
+<td><code>checks.py</code></td>
+<td>All the checks and edge cases of step 1</td>
+</tr>
+<tr>
+<td><em>Bonus</em> — <code>transforms/</code></td>
+<td>One image transformation per file (<code>blank.py</code>, <code>shuffle.py</code>, <code>blur.py</code>, <code>noise.py</code>, <code>resolution.py</code>)</td>
+</tr>
+<tr>
+<td><em>Bonus</em> — <code>transforms/base.py</code></td>
+<td><strong>Interface</strong> <code>Transform</code>: what a transformation must provide</td>
+</tr>
+<tr>
+<td><em>Bonus</em> — <code>generate.py</code></td>
+<td>Apply the <code>generation</code> block of the configuration</td>
+</tr>
+<tr>
+<td><code>table.py</code></td>
+<td>Write the table and its fingerprint</td>
+</tr>
+</tbody>
+</table></div>
+<h4 id="audit--step-2"><code>audit/</code> — Step 2</h4>
+<p><strong>Goal</strong>: describe the distribution of the table, without changing it.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>counts.py</code></td>
+<td>Counts per level: rows, samples, units, labels</td>
+</tr>
+<tr>
+<td><em>Bonus</em> — <code>crosstabs.py</code></td>
+<td>Crosstabs between the axes and the other columns</td>
+</tr>
+<tr>
+<td><code>samples.py</code></td>
+<td>Variants per sample, incomplete samples</td>
+</tr>
+<tr>
+<td><em>Bonus</em> — <code>mde.py</code></td>
+<td>Minimum detectable shift (section 5.6)</td>
+</tr>
+</tbody>
+</table></div>
+<h4 id="variants--step-3"><code>variants/</code> — Step 3</h4>
+<p><strong>Goal</strong>: prepare exactly what will be sent to the models.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>prompts.py</code></td>
+<td>Fill the templates, write <code>prompt</code>, <code>positive_prompt</code> and <code>negative_prompt</code></td>
+</tr>
+<tr>
+<td><code>plan.py</code></td>
+<td>Check that each declared axis has its column</td>
+</tr>
+</tbody>
+</table></div>
+<h4 id="tasks--task-types"><code>tasks/</code> — Task types</h4>
+<p><strong>Goal</strong>: gather everything that depends on the form of the question, so that a type can be added without touching the steps.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>base.py</code></td>
+<td><strong>Interface</strong> <code>Task</code>: ask the question, read the answer, say whether it is correct</td>
+</tr>
+<tr>
+<td><code>yes_no.py</code></td>
+<td>The yes/no type (only type in V1), with reading by list</td>
+</tr>
+<tr>
+<td><code>llm_reader.py</code></td>
+<td>Reading of answers by a local small LLM (section 3)</td>
+</tr>
+</tbody>
+</table></div>
+<h4 id="inference--step-4"><code>inference/</code> — Step 4</h4>
+<p><strong>Goal</strong>: get the answers of the models and produce the results table.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>File or folder</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>base.py</code></td>
+<td><strong>Interface</strong> <code>Model</code>: what a model must provide. Optional <code>embed</code> method (batch of images → vectors), which the model declares if it provides it (contrastive models in V1). Signatures in 7.3</td>
+</tr>
+<tr>
+<td><code>adapters/vlmevalkit.py</code></td>
+<td>Generative models through VLMEvalKit (local; API as a bonus)</td>
+</tr>
+<tr>
+<td><code>adapters/contrastive.py</code></td>
+<td>Contrastive models (CLIP and similar)</td>
+</tr>
+<tr>
+<td><code>runner.py</code></td>
+<td>Send each variant to each model in batches: resume, retry, status <code>error</code>, call the small LLM if needed</td>
+</tr>
+<tr>
+<td><em>Bonus</em> — <code>external.py</code></td>
+<td>Import a results table produced elsewhere</td>
+</tr>
+<tr>
+<td><code>run_log.py</code></td>
+<td>Write the run log (versions, dates, parameters, fingerprints)</td>
+</tr>
+</tbody>
+</table></div>
+<h4 id="stats--step-5"><code>stats/</code> — Step 5</h4>
+<p><strong>Goal</strong>: compute each shift measure with its uncertainty (section 5).</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pairing.py</code></td>
+<td>Find the samples common to two levels, count the excluded ones</td>
+</tr>
+<tr>
+<td><code>metrics.py</code></td>
+<td>Base metrics (5.1)</td>
+</tr>
+<tr>
+<td><code>shifts.py</code></td>
+<td>Shift metrics (5.2, 5.3); interactions as a bonus</td>
+</tr>
+<tr>
+<td><code>bootstrap.py</code></td>
+<td>Intervals and significance (5.4, 5.5)</td>
+</tr>
+<tr>
+<td><em>Bonus</em> — <code>tests.py</code></td>
+<td>McNemar and Cochran (5.5)</td>
+</tr>
+<tr>
+<td><code>probes.py</code></td>
+<td>Latent space probe (5.7)</td>
+</tr>
+<tr>
+<td><code>measures.py</code></td>
+<td>Compute each declared measure and write the metrics table</td>
+</tr>
+</tbody>
+</table></div>
+<h4 id="report--step-6"><code>report/</code> — Step 6</h4>
+<p><strong>Goal</strong>: produce the report (tables in V1).</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>File or folder</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>export.py</code></td>
+<td>Export the report tables; <em>bonus</em>: the reproduction archive</td>
+</tr>
+<tr>
+<td><em>Bonus</em> — <code>figures.py</code></td>
+<td>Charts (SVG, PDF)</td>
+</tr>
+<tr>
+<td><em>Bonus</em> — <code>html.py</code></td>
+<td>Assemble the HTML report</td>
+</tr>
+<tr>
+<td><em>Bonus</em> — <code>templates/</code></td>
+<td>Templates of the report pages</td>
+</tr>
+</tbody>
+</table></div>
+<h4 id="extensionspy-and-clipy"><code>extensions.py</code> and <code>cli.py</code></h4>
+<div class="table"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>extensions.py</code></td>
+<td>Adapter registry (<code>register_adapter</code>, 7.3). <em>Bonus</em>: load a class by its Python path (e.g. <code>my_package.MyModel</code>)</td>
+</tr>
+<tr>
+<td><code>cli.py</code></td>
+<td>Commands: <code>import</code>, <code>audit</code>, <code>prepare</code>, <code>run</code> (with <code>experiment.yaml</code>), <code>analyze</code> (with <code>analysis.yaml</code>: statistics and report), and <code>all</code> to chain everything</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="63-med-package-packagesmed">6.3 Med package (<code>packages/med/</code>)</h3>
+<p><strong>Goal</strong>: everything specific to the medical image benchmark. It uses only the interfaces of Core.</p>
+<pre><code class="language-text">packages/med/
+├── prepare/       One script per source (11): raw data → VLMShift table
+├── label_rules/   Labeling rules per source → positive / negative / unknown
+├── adapters/      Medical models missing from VLMEvalKit
+├── configs/       Benchmark configurations (YAML)
+├── check.py       Checks that everything is ready: data accessible, environments installed
+├── run.sh         Runs the whole benchmark with one command
+└── README.md      Data access and licenses
+</code></pre>
+<ul>
+<li>The data themselves are not in the repository: each user obtains them according to their license.</li>
+</ul>
+<h3 id="64-other-folders">6.4 Other folders</h3>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Folder</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tests/</code></td>
+<td>Same organization as <code>src/vlmshift/</code>. The shared test set and its expected results in <code>tests/fixtures/</code> (7.5)</td>
+</tr>
+<tr>
+<td><code>examples/</code></td>
+<td>POPE mini (<code>examples/pope_mini/</code>): 100 photos of POPE asked to CLIP, without GPU, and compared with the published results</td>
+</tr>
+<tr>
+<td><code>environments/</code></td>
+<td>One Python environment file per model family. Docker containers later</td>
+</tr>
+<tr>
+<td><code>docs/</code></td>
+<td><code>design.md</code>, <code>decisions.md</code></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="65-working-folder-what-the-tool-produces">6.5 Working folder (what the tool produces)</h3>
+<pre><code class="language-text">workspace/
+├── tables/&lt;fingerprint&gt;/            VLMShift table and audit, written once
+│   ├── table.parquet
+│   ├── issues.parquet
+│   ├── audit/
+│   └── variants/&lt;fingerprint&gt;/      One variants table per set of templates
+│       └── variants.parquet
+├── cache/&lt;model fingerprint&gt;/       Raw outputs and failures of a model, keyed by question, reused everywhere
+└── runs/&lt;run&gt;/                      One folder per run
+    ├── experiment.yaml              Frozen copy
+    ├── audit/                       The audit of this experiment, copied from its table
+    ├── results.parquet
+    ├── run_log.json
+    ├── embeddings.parquet           Vectors of the models with embeddings: true
+    ├── reader_validation.parquet    Validation of the small LLM (if declared)
+    ├── issues.parquet
+    └── analyses/&lt;fingerprint&gt;/      One analysis per analysis.yaml, can be run again
+        ├── analysis.yaml            Frozen copy
+        ├── metrics.parquet
+        ├── probes.parquet
+        ├── issues.parquet
+        └── report/
+</code></pre>
+<ul>
+<li>The variants table depends on the table and on the templates of the task: it has its own fingerprint.</li>
+<li>A run points to its variants table by this fingerprint: several models are tested on exactly the same variants.</li>
+<li>Each analysis has its own fingerprint: running the same <code>analysis.yaml</code> again finds the same folder.</li>
+</ul>
+<h3 id="66-adding-an-extension">6.6 Adding an extension</h3>
+<div class="table"><table>
+<thead>
+<tr>
+<th>I want to add…</th>
+<th>Where</th>
+<th>What to write</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A model</td>
+<td>My own file, or <code>packages/&lt;package&gt;/adapters/</code></td>
+<td>A class that follows <code>Model</code></td>
+</tr>
+<tr>
+<td><em>Bonus</em> — An image transformation</td>
+<td>Same</td>
+<td>A class that follows <code>Transform</code> (interface to be defined)</td>
+</tr>
+<tr>
+<td>A task type</td>
+<td>Same</td>
+<td>A class that follows <code>Task</code></td>
+</tr>
+<tr>
+<td>A package</td>
+<td><code>packages/&lt;name&gt;/</code></td>
+<td>Preparation scripts and configurations</td>
+</tr>
+</tbody>
+</table></div>
+<p>In V1, an adapter is registered under a name (e.g. by the Med package) and cited in <code>models.adapter</code>. <em>Bonus</em> — with generic loading, the extension is declared by its Python path (e.g. <code>adapter: my_package.MyModel</code>). No Core file is modified.</p>
+<h2 id="7-contracts">7. Contracts</h2>
+<p>What the modules exchange, defined exactly so that they can be developed in parallel.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Contract</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>7.1</td>
+<td>Configuration schemas (<code>experiment.yaml</code>, <code>analysis.yaml</code>)</td>
+<td>Validated</td>
+</tr>
+<tr>
+<td>7.2</td>
+<td>Schemas of the exchanged files</td>
+<td>Validated</td>
+</tr>
+<tr>
+<td>7.3</td>
+<td>Interface signatures (<code>Model</code>, <code>Task</code>)</td>
+<td>Validated</td>
+</tr>
+<tr>
+<td>7.4</td>
+<td>Computation of fingerprints and IDs</td>
+<td>Validated</td>
+</tr>
+<tr>
+<td>7.5</td>
+<td>Shared test dataset (toy dataset, fake models, expected results) — <strong>to create first</strong></td>
+<td>Validated</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="71-configuration-schemas">7.1 Configuration schemas</h3>
+<p><strong>Implementation</strong> (<code>config/schema.py</code>)</p>
+<ul>
+<li>Each block is a pydantic class; each key, a typed attribute with its default value.</li>
+<li>Unknown keys refused (<code>extra=&quot;forbid&quot;</code>): a typo causes an error.</li>
+<li>Rules between keys: checking functions in the schema.</li>
+<li>Read as YAML 1.2 (ruamel.yaml): <code>yes</code> and <code>no</code> stay text, no quotes needed.</li>
+<li>The schema is exported as JSON Schema (documentation, autocompletion in editors).</li>
+</ul>
+<p>Comment notation: type · required or optional · default value.</p>
+<h4 id="experimentyaml--before-inference"><code>experiment.yaml</code> — before inference</h4>
+<pre><code class="language-yaml">schema_version: 1                 # integer · required · only value: 1
+
+data: images.parquet              # path or list of paths (CSV, Parquet) · required
+workspace: ./workspace            # path · optional · default ./workspace
+
+roles:                            # which column plays each role
+  image: image                    # string · optional · default &quot;image&quot;
+  question: question              # string · optional · default &quot;question&quot;
+  label: label                    # string · optional · default &quot;label&quot;
+  sample_id: null                 # string · optional · default: computed (section 3)
+  unit: null                      # string · optional · default: sample ID
+  original_id: null               # string · optional · ID of the source dataset
+  positive_text: null             # string · optional · otherwise task.contrastive
+  negative_text: null             # string · optional · otherwise task.contrastive
+
+axes:                             # required · at least one · key = column name
+  language: {type: controlled}    # controlled | observed · required
+  site:     {type: observed}
+
+task:
+  type: yes_no                    # yes_no · required (only value in V1)
+  template: null                  # string with {column} · optional · default: column of roles.question
+  answers:                        # optional · lists, or path to a YAML file of the same shape
+    yes: [&quot;yes&quot;, &quot;oui&quot;, &quot;हाँ&quot;]    # non-empty list of strings
+    no:  [&quot;no&quot;, &quot;non&quot;, &quot;नहीं&quot;]    # non-empty list of strings
+  reader_llm:                     # optional · local small LLM to read the answers
+    model: &lt;model name&gt;           # string · required in this block
+    revision: null                # string · optional · exact version
+    validation: null              # path · optional · CSV of annotated answers: response, language, expected
+  contrastive:                    # required if contrastive model without positive_text/negative_text columns
+    positive_template: &quot;a photo showing a {concept}&quot;   # string with {column}
+    negative_template: &quot;a photo with no {concept}&quot;     # string with {column}
+
+models:                           # non-empty list · required
+  - name: qwen2.5-vl-7b           # unique string · required · name shown in the results
+    adapter: vlmevalkit           # vlmevalkit | contrastive | name registered by a package · required
+    id: Qwen2.5-VL-7B-Instruct    # string · optional · default = name · VLMEvalKit or Hugging Face name
+    revision: null                # string · optional · exact version of the weights
+    params: {}                    # dictionary · optional · overrides the values of &quot;inference&quot;
+  - name: medsiglip
+    adapter: contrastive
+    embeddings: true              # boolean · optional · default false · records the vectors (probe)
+
+inference:                        # optional
+  temperature: 0                  # number ≥ 0 · default 0
+  max_new_tokens: 16              # integer &gt; 0 · default 16
+  retries: 2                      # integer ≥ 0 · default 2 · attempts before status error
+</code></pre>
+<p><strong>Answer reader</strong>: <code>answers</code> only → list; <code>reader_llm</code> only → small LLM; both → list then small LLM; neither → default list (<code>yes</code> = [&quot;yes&quot;], <code>no</code> = [&quot;no&quot;]).</p>
+<h4 id="analysisyaml--after-inference-can-be-run-again"><code>analysis.yaml</code> — after inference, can be run again</h4>
+<pre><code class="language-yaml">schema_version: 1                 # integer · required · only value: 1
+run: runs/&lt;run&gt;                   # path of the run to analyze · required
+
+axes:                             # optional · analysis settings per axis
+  language:
+    reference: EN                 # string · optional · default: none (all pairs)
+    levels: [EN, FR, HI]          # list · optional · default: all levels present
+
+measures:                         # optional · default: one &quot;compare&quot; per axis, without split
+  - name: language_by_site        # unique string · required
+    compare: language             # axis of experiment.yaml · required
+    split_by: [site]              # list of axes · optional · default []
+
+stats:                            # optional
+  bootstrap: 2000                 # integer ≥ 100 · default 2000
+  alpha: 0.05                     # number in (0, 1) · default 0.05
+  seed: 0                         # integer · default 0
+  min_units: 30                   # integer ≥ 1 · default 30 · below: not estimable
+
+latent:                           # optional · latent space probe (5.7)
+  targets: [site, label]          # non-empty list of columns · required in this block
+  folds: 5                        # integer ≥ 2 · default 5
+
+report:                           # optional
+  notice: null                    # string · optional · usage notice shown in the report
+</code></pre>
+<h4 id="checking-rules">Checking rules</h4>
+<p><strong>At load time (configuration only)</strong></p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unknown key, wrong type, value out of bounds or missing required key → error</td>
+<td>both</td>
+</tr>
+<tr>
+<td>Unique model names; unique measure names</td>
+<td>experiment; analysis</td>
+</tr>
+<tr>
+<td>No answer in both <code>yes</code> and <code>no</code> (lowercase comparison)</td>
+<td>experiment</td>
+</tr>
+<tr>
+<td>Contrastive model → <code>task.contrastive</code>, or both columns <code>positive_text</code> and <code>negative_text</code></td>
+<td>experiment</td>
+</tr>
+<tr>
+<td>If <code>levels</code> is given, <code>reference</code> is part of it</td>
+<td>analysis</td>
+</tr>
+<tr>
+<td><code>compare</code> and <code>split_by</code> with no axis in common</td>
+<td>analysis</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>With the data or the run</strong></p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Each cited column (roles, axes, template slots, <code>latent.targets</code>) exists</td>
+<td>Step 1 or 3; step 5 for <code>latent.targets</code></td>
+</tr>
+<tr>
+<td>The axes of <code>analysis.yaml</code> (<code>axes</code>, <code>compare</code>, <code>split_by</code>) are declared in the <code>experiment.yaml</code> of the run</td>
+<td>Step 5</td>
+</tr>
+<tr>
+<td><code>reference</code> and <code>levels</code> exist in the data</td>
+<td>Step 5</td>
+</tr>
+<tr>
+<td><code>latent</code> declared → at least one model of the run has <code>embeddings: true</code></td>
+<td>Step 5</td>
+</tr>
+<tr>
+<td><code>reader_llm</code> declared → the model loads</td>
+<td>Step 4, before any inference</td>
+</tr>
+<tr>
+<td><code>reader_llm.validation</code> → the file exists and has the columns <code>response</code>, <code>language</code>, <code>expected</code> (<code>yes</code>, <code>no</code> or <code>unclear</code>)</td>
+<td>Step 4, before any inference</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="72-schemas-of-the-exchanged-files">7.2 Schemas of the exchanged files</h3>
+<p>Only the essentials are fixed: the files, their keys and the columns the other modules need. The rest is free for whoever codes the module.</p>
+<p><strong>Conventions</strong></p>
+<ul>
+<li>Tables in Parquet. Missing value = <code>null</code> (never an empty string or <code>NaN</code>).</li>
+<li>Each file keeps its schema version and its fingerprint in metadata.</li>
+<li>Files are linked only by three keys: <code>id</code> (the row), <code>image_hash</code> (the image) and <code>model</code>.</li>
+</ul>
+<p><strong>Files</strong></p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Produced by</th>
+<th>Read by</th>
+<th>Key</th>
+<th>Essential columns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>table.parquet</code></td>
+<td>Step 1</td>
+<td>2, 3</td>
+<td><code>id</code></td>
+<td><code>id</code>, <code>sample_id</code>, <code>unit</code>, <code>image</code>, <code>image_hash</code>, <code>label</code>, and the axis columns</td>
+</tr>
+<tr>
+<td><code>variants.parquet</code></td>
+<td>Step 3</td>
+<td>4, 5</td>
+<td><code>id</code></td>
+<td>Those of <code>table</code>, plus <code>prompt</code>, <code>positive_prompt</code>, <code>negative_prompt</code></td>
+</tr>
+<tr>
+<td><code>results.parquet</code></td>
+<td>Step 4</td>
+<td>5</td>
+<td><code>id</code> + <code>model</code></td>
+<td><code>status</code>, <code>decision</code>, <code>decision_source</code>, <code>response</code>, <code>score_pos</code>, <code>score_neg</code></td>
+</tr>
+<tr>
+<td><code>embeddings.parquet</code></td>
+<td>Step 4</td>
+<td>5</td>
+<td><code>model</code> + <code>image_hash</code></td>
+<td><code>vector</code></td>
+</tr>
+<tr>
+<td><code>reader_validation.parquet</code></td>
+<td>Step 4</td>
+<td>6</td>
+<td><code>language</code></td>
+<td>Number of answers, accuracy of the small LLM</td>
+</tr>
+<tr>
+<td><code>audit/counts.parquet</code></td>
+<td>Step 2</td>
+<td>6</td>
+<td><code>axis</code> + <code>level</code></td>
+<td>Number of rows, samples, units, <code>positive</code> / <code>negative</code> / <code>unknown</code> labels</td>
+</tr>
+<tr>
+<td><code>run_log.json</code></td>
+<td>Step 4</td>
+<td>5, 6</td>
+<td></td>
+<td>Versions of the models and libraries, fingerprints</td>
+</tr>
+<tr>
+<td><code>metrics.parquet</code></td>
+<td>Step 5</td>
+<td>6</td>
+<td></td>
+<td>See below</td>
+</tr>
+<tr>
+<td><code>probes.parquet</code></td>
+<td>Step 5</td>
+<td>6</td>
+<td><code>model</code> + <code>target</code></td>
+<td>Probe score, floor, interval</td>
+</tr>
+<tr>
+<td><code>issues.parquet</code></td>
+<td>All</td>
+<td>6</td>
+<td></td>
+<td><code>step</code>, <code>severity</code> (<code>error</code> / <code>warning</code>), <code>code</code>, <code>id</code>, <code>message</code></td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>Standard names</strong>: at import, the role columns take the name of their role (<code>image</code>, <code>label</code>, <code>question</code>…). The following modules no longer need to know the roles.</li>
+<li><strong><code>results.parquet</code></strong> contains only the outputs of the models. It is linked to the variants by <code>id</code>, without copying their columns.</li>
+</ul>
+<p><strong><code>metrics.parquet</code></strong>: the contract between statistics and report. One row per figure.</p>
+<p><code>measure</code>, <code>model</code>, <code>split</code>, <code>level_a</code>, <code>level_b</code>, <code>metric</code>, <code>value</code>, <code>ci_low</code>, <code>ci_high</code> (corrected, 5.5), <code>ci95_low</code>, <code>ci95_high</code> (exploratory), <code>m</code>, <code>significant</code>, and the counts (<code>n_units</code>, <code>n_valid</code>, <code>n_invalid</code>…).</p>
+<ul>
+<li>Adding a metric does not change the schema: it is a new value in the <code>metric</code> column.</li>
+</ul>
+<h3 id="73-interface-signatures">7.3 Interface signatures</h3>
+<p>What a class must provide so that the engine can call it. <code>Transform</code> (image generation, bonus) will be defined later.</p>
+<h4 id="model-inferencebasepy"><code>Model</code> (<code>inference/base.py</code>)</h4>
+<pre><code class="language-python">class Model:
+    def __init__(self, name: str, id: str, revision: str | None, params: dict): ...
+
+    # Description
+    kind: Literal[&quot;generative&quot;, &quot;contrastive&quot;]
+    supports_embed: bool = False
+    batch_size: int = 8                      # can be overridden by models.params.batch_size
+    def info(self) -&gt; dict: ...              # versions, revision: written in run_log.json
+
+    # Lifecycle
+    def load(self) -&gt; None: ...
+    def unload(self) -&gt; None: ...
+
+    # Generative only
+    def generate(self, images: list[str], prompts: list[str], params: dict) -&gt; list[str]: ...
+    # Contrastive only: one pair (positive score, negative score) per image
+    def score(self, images: list[str], positives: list[str], negatives: list[str]) -&gt; list[tuple[float, float]]: ...
+    # Optional
+    def embed(self, images: list[str]) -&gt; list[list[float]]: ...
+</code></pre>
+<ul>
+<li>Images are passed by their path. Lists of the same length; results in the same order.</li>
+<li>A generative model implements <code>generate</code>, a contrastive one <code>score</code>, and <code>embed</code> only if <code>supports_embed</code> is <code>True</code>.</li>
+<li>Failure: raise <code>ModelError(&quot;message&quot;)</code>, never an empty answer. The inference module tries again, then sets <code>status = error</code> with this message.</li>
+</ul>
+<h4 id="task-tasksbasepy"><code>Task</code> (<code>tasks/base.py</code>)</h4>
+<pre><code class="language-python">class Task:
+    name: str                                                   # &quot;yes_no&quot;
+    def build_prompt(self, row: dict, template: str | None) -&gt; str: ...
+    def build_contrastive(self, row: dict, pos: str, neg: str) -&gt; tuple[str, str]: ...
+    def read(self, response: str, answers: dict) -&gt; str | None: ...       # &quot;yes&quot;, &quot;no&quot; or None
+    def is_correct(self, decision: str, label: str) -&gt; bool | None: ...   # None if label = unknown
+</code></pre>
+<ul>
+<li>The small LLM is not an interface: the inference module calls it when <code>read</code> returns <code>None</code> and <code>reader_llm</code> is declared.</li>
+</ul>
+<h4 id="registering-an-adapter">Registering an adapter</h4>
+<pre><code class="language-python">register_adapter(&quot;chexzero&quot;, CheXzeroModel)     # called by the Med package
+</code></pre>
+<ul>
+<li>The registered name is the one written in <code>models.adapter</code>. <code>vlmevalkit</code> and <code>contrastive</code> are provided by Core.</li>
+</ul>
+<h4 id="conformance-test">Conformance test</h4>
+<p>Each adapter passes the same test, on the shared test set (7.5): length and type of the outputs, and <code>ModelError</code> raised in case of failure.</p>
+<h3 id="74-computation-of-fingerprints-and-ids">7.4 Computation of fingerprints and IDs</h3>
+<ul>
+<li><strong>ID</strong>: the name of a row. It links the files to each other (an answer in <code>results</code> → its row in <code>variants</code>).</li>
+<li><strong>Fingerprint</strong>: the signature of a whole content (table, configuration). Same content → same fingerprint. It is used to resume a run without redoing the work, to guarantee that two models saw exactly the same data, and to trace each figure.</li>
+</ul>
+<p>Everything is computed with <strong>SHA-256</strong>, then truncated to <strong>16</strong> hexadecimal characters. A collision detected at import → error.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>What</th>
+<th>Computed from</th>
+<th>Format</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>image_hash</code></td>
+<td>The bytes of the image file</td>
+<td>64 characters (full code)</td>
+</tr>
+<tr>
+<td><code>id</code> (row)</td>
+<td>The content of the row: all its columns except <code>id</code></td>
+<td><code>l_</code> + 16 characters</td>
+</tr>
+<tr>
+<td><code>sample_id</code> (if computed)</td>
+<td>The columns of the rule in section 3</td>
+<td><code>s_</code> + 16 characters</td>
+</tr>
+<tr>
+<td>Table</td>
+<td>The sorted list of the <code>id</code>s</td>
+<td>16 characters</td>
+</tr>
+<tr>
+<td>Variants</td>
+<td>The table fingerprint + the templates used by the kinds of model present</td>
+<td>16 characters</td>
+</tr>
+<tr>
+<td>Run</td>
+<td><code>experiment.yaml</code> + the variants fingerprint</td>
+<td>16 characters</td>
+</tr>
+<tr>
+<td>Model (cache)</td>
+<td>Its settings: <code>adapter</code>, <code>id</code> (or <code>name</code> when there is no <code>id</code>), <code>revision</code>, <code>params</code>, <code>inference</code>, except <code>retries</code></td>
+<td>16 characters</td>
+</tr>
+<tr>
+<td>Question (cache entry)</td>
+<td>The image fingerprint + the texts its kind of model receives (<code>prompt</code>, or the two sentences)</td>
+<td>16 characters</td>
+</tr>
+<tr>
+<td>Analysis</td>
+<td><code>analysis.yaml</code>, the run designated by its fingerprint</td>
+<td>16 characters</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Canonical form</strong> (so that all modules compute the same code)</p>
+<ul>
+<li><strong>Configuration</strong>: read, checked, default values filled in, then written as sorted JSON, without spaces, in UTF-8. The paths (<code>data</code>, <code>workspace</code>, <code>run</code>) are excluded. Comments, key order and default values written explicitly therefore change nothing.</li>
+<li><strong>Row</strong>: columns sorted by name, values converted to text, text normalized in Unicode NFC, <code>null</code> kept.</li>
+</ul>
+<p><strong>Consequences</strong></p>
+<ul>
+<li>Running the same <code>experiment.yaml</code> again finds the same run: the resume is automatic.</li>
+<li>Adding or removing a model creates a new run, but the unchanged models are taken from the cache, without recomputation, even when the new model is of another kind.</li>
+<li>Any change to the data (even a corrected label) creates a new table, therefore new IDs and a new run. A result thus stays attached to the exact data that produced it.</li>
+<li>The same file, rows in another order, keeps its IDs and its fingerprint.</li>
+</ul>
+<h3 id="75-shared-test-dataset">7.5 Shared test dataset</h3>
+<blockquote>
+<p><strong>First thing to do.</strong> If it does not exist yet in the code, this test set must be created before any other development. One person prepares it; everyone uses it afterwards.</p>
+</blockquote>
+<p><strong>What it is for</strong>: everyone tests their module without waiting for the others'. E.g. whoever codes the statistics starts from results that are already written and checks that they find the expected figures, even if inference does not exist yet.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Toy dataset</td>
+<td>8 small images generated by a script (simple shapes, e.g. &quot;is there a circle?&quot;), no license problem. 2 sites, 2 languages (EN, FR), 4 subjects of 2 images each, labels <code>positive</code>, <code>negative</code> and <code>unknown</code>. That makes 16 rows.</td>
+</tr>
+<tr>
+<td>&quot;Broken&quot; table</td>
+<td>One example of each edge case of step 1 (missing image, invalid label, duplicate…)</td>
+</tr>
+<tr>
+<td>Fake generative model</td>
+<td>Answers set by a rule: correct in EN, some answers flipped in FR, one &quot;maybe&quot; answer (→ <code>INVALID</code>), one failure (→ <code>ModelError</code>)</td>
+</tr>
+<tr>
+<td>Fake contrastive model</td>
+<td>Scores set by a rule. Its vectors deliberately encode the site: the probe must detect it.</td>
+</tr>
+<tr>
+<td>Annotated answers</td>
+<td>About twenty answers in 2 or 3 languages, to test the readers (list and small LLM)</td>
+</tr>
+<tr>
+<td>Expected results</td>
+<td>For each step, the expected output file. For the statistics, the values computed by hand (e.g. sensitivity EN = 1, answer change rate EN → FR = 0.25).</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Rules</strong></p>
+<ul>
+<li>The two fake models are registered as normal adapters (<code>fake_generative</code>, <code>fake_contrastive</code>). They also serve for the conformance test (7.3).</li>
+<li>Bootstrap: we do not test an exact interval value (it depends on the draw), only that the interval contains the computed value.</li>
+<li>The toy dataset is small (4 units): its <code>analysis.yaml</code> lowers the thresholds (<code>stats.min_units: 1</code>, <code>latent.folds: 2</code>, <code>stats.bootstrap: 200</code>). Otherwise, everything would be &quot;not estimable&quot;.</li>
+<li>Storage: toy dataset, its configurations and the expected results in <code>tests/fixtures/</code>. It is test data only: the demo uses real photos (<code>examples/pope_mini/</code>).</li>
+</ul>
+</main>
+</body>
+</html>

@@ -1,0 +1,16 @@
+model,huggingface,vlmevalkit,mode,accuracy,precision,recall,f1,yes_ratio
+mPLUG-Owl,,,random,53.30,51.71,99.53,68.06,96.23
+LLaVA,,,random,54.43,52.32,99.80,68.65,95.37
+MultiModal-GPT,,,random,50.03,50.02,100.00,66.68,99.97
+MiniGPT-4,,MiniGPT-4-v1-13B,random,77.83,75.38,82.67,78.86,54.83
+InstructBLIP,Salesforce/instructblip-vicuna-13b,instructblip_13b,random,88.73,85.08,93.93,89.29,55.20
+mPLUG-Owl,,,popular,50.63,50.32,99.27,66.79,98.63
+LLaVA,,,popular,52.43,51.25,99.80,67.72,97.37
+MultiModal-GPT,,,popular,50.00,50.00,100.00,66.67,100.00
+MiniGPT-4,,MiniGPT-4-v1-13B,popular,68.30,64.27,82.40,72.21,64.10
+InstructBLIP,Salesforce/instructblip-vicuna-13b,instructblip_13b,popular,81.37,75.07,93.93,83.45,62.57
+mPLUG-Owl,,,adversarial,50.67,50.34,99.33,66.82,98.67
+LLaVA,,,adversarial,50.77,50.39,99.87,66.98,99.10
+MultiModal-GPT,,,adversarial,50.00,50.00,100.00,66.67,100.00
+MiniGPT-4,,MiniGPT-4-v1-13B,adversarial,66.60,62.45,83.27,71.37,66.67
+InstructBLIP,Salesforce/instructblip-vicuna-13b,instructblip_13b,adversarial,74.37,67.67,93.33,78.45,68.97

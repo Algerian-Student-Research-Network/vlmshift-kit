@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NVIDIA server · VLMShift</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="VLMShift. A simple kit for measuring shift in vision-language models.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2032%2032%22%20role%3D%22img%22%20aria-label%3D%22VLMShift%20logo%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20%3E%3Cpath%20d%3D%22M15%2C4%20A10%2C10%200%200%200%2015%2C24%20Z%22%20fill%3D%22%233f7a5c%22/%3E%3Cpath%20d%3D%22M17%2C8%20A10%2C10%200%200%201%2017%2C28%20Z%22%20fill%3D%22%233f7a5c%22%20fill-opacity%3D%22.38%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="top"><a class="brand" href="index.html"><svg viewBox="0 0 32 32" role="img" aria-label="VLMShift logo" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M15,4 A10,10 0 0 0 15,24 Z" fill="var(--accent, #3f7a5c)"/><path d="M17,8 A10,10 0 0 1 17,28 Z" fill="var(--accent, #3f7a5c)" fill-opacity=".38"/></svg><span>VLMShift</span></a><nav aria-label="Site"><a href="tutorial.html">Tutorial</a><a href="files.html">File guide</a><a href="documentation.html">Documentation</a></nav></header>
+<main class="reading">
+<h1 id="run-on-an-nvidia-server">Run on an NVIDIA server</h1>
+<p>Generative models such as SmolVLM need an NVIDIA graphics card. This guide takes an experiment prepared on your computer, runs it on a server, and brings the report back.</p>
+<p>Start from an experiment folder made with the <a href="tutorial.html#4-set-up-your-own-images">tutorial</a>. In this guide it is called <code>my_experiment</code>, and it sits next to the <code>VLMShift</code> folder.</p>
+<blockquote>
+<p><strong>Not yet tried with a real card.</strong> Steps 2 to 4 were replayed word for word on a fresh Linux machine with no graphics card, and the fixes it needed are written in. SmolVLM then answered through VLMEvalKit on the processor, after changing one line of VLMEvalKit for that test only. Step 4 exists to show what works on your server in a few minutes.</p>
+</blockquote>
+<h2 id="1-what-you-need">1. What you need</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>You need</th>
+<th>How to check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A Linux server with an NVIDIA card</td>
+<td><code>nvidia-smi</code> lists the card</td>
+</tr>
+<tr>
+<td>Python 3.11</td>
+<td><code>python3.11 --version</code></td>
+</tr>
+<tr>
+<td>A C compiler: one package must be compiled</td>
+<td><code>gcc --version</code></td>
+</tr>
+<tr>
+<td>Git: VLMEvalKit is installed from its repository</td>
+<td><code>git --version</code></td>
+</tr>
+<tr>
+<td>About 20 GB of free disk for the libraries and a small model</td>
+<td><code>df -h ~</code></td>
+</tr>
+<tr>
+<td>Internet access on the server, for the first download</td>
+<td><code>curl -I https://huggingface.co</code></td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="2-copy-your-work-to-the-server">2. Copy your work to the server</h2>
+<p>On your computer, from the folder that holds <code>VLMShift</code> and <code>my_experiment</code>, make one archive. Replace <code>user@server</code> with your own login:</p>
+<pre><code class="language-bash">tar --exclude=.venv --exclude=workspace -czf vlmshift.tar.gz VLMShift my_experiment
+</code></pre>
+<pre><code class="language-bash">scp vlmshift.tar.gz user@server:
+</code></pre>
+<p>On the server, unpack it:</p>
+<pre><code class="language-bash">tar -xzf vlmshift.tar.gz
+</code></pre>
+<p>The paths in <code>table.csv</code> are relative, so there is nothing to change.</p>
+<h2 id="3-install">3. Install</h2>
+<p>On the server, create an environment and install everything:</p>
+<pre><code class="language-bash">cd VLMShift
+</code></pre>
+<pre><code class="language-bash">python3.11 -m venv .venv
+</code></pre>
+<pre><code class="language-bash">source .venv/bin/activate
+</code></pre>
+<pre><code class="language-bash">pip install -e .
+</code></pre>
+<pre><code class="language-bash">pip install -r environments/vlmevalkit.txt
+</code></pre>
+<p>This installs about 220 packages and takes about 7 GB. On a test Linux machine it took 31 minutes. On Linux, the default <code>torch</code> is already built for NVIDIA cards.</p>
+<p>A server usually has no screen, so swap OpenCV for its server version. Without this, VLMEvalKit cannot load and asks for <code>libGL.so.1</code>:</p>
+<pre><code class="language-bash">pip uninstall -y opencv-python
+</code></pre>
+<pre><code class="language-bash">pip install opencv-python-headless
+</code></pre>
+<p>pip then warns that <code>vlmeval</code> requires <code>opencv-python</code>. This is expected: both versions provide the same module.</p>
+<h2 id="4-check-before-the-long-run">4. Check before the long run</h2>
+<p>Go to your experiment and try every model:</p>
+<pre><code class="language-bash">cd ../my_experiment
+</code></pre>
+<pre><code class="language-bash">vlmshift check experiment.yaml
+</code></pre>
+<p>The tool shows the graphics card, asks each model up to four real questions, and estimates the length of the full run. No answer is kept, so the check changes no result. The first time, it downloads the model: about 500 MB for <code>SmolVLM-256M</code>.</p>
+<p>With a fake model, on a computer with no card, it looks like this:</p>
+<pre><code class="language-text">Graphics cards: none seen by torch
+Libraries: python 3.14.2, torch 2.12.0, transformers 5.22.2
+demo (demo)
+  Loaded in 0 s
+  Question: Y a-t-il un cercle dans cette image ? Répondez par oui ou non.
+  Answer:   'non'
+  Read as:  no (0.0 s)
+  Question: Is there a circle in this image? Answer yes or no.
+  Answer:   'No.'
+  Read as:  no (0.0 s)
+  All 8 variants: about 0 s
+Next: read the answers above. If they look right, start the run.
+</code></pre>
+<p>Read each answer yourself. The check proves that a model responds, not that it is right.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>You see</th>
+<th>What it means</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Graphics cards: none seen by torch</code>, then <code>Found no NVIDIA driver</code></td>
+<td><code>torch</code> cannot use the card</td>
+<td>Run <code>nvidia-smi</code>. The default <code>torch</code> needs a driver for CUDA 13: the first line of <code>nvidia-smi</code> shows the CUDA version. If yours is older, install the <code>torch</code> that matches it from <a href="https://pytorch.org/get-started/locally/">pytorch.org</a></td>
+</tr>
+<tr>
+<td><code>FAILED: ImportError: libGL.so.1</code></td>
+<td>OpenCV looks for a screen</td>
+<td>Do the OpenCV swap at the end of <a href="#3-install">step 3</a></td>
+</tr>
+<tr>
+<td><code>FAILED: ModuleNotFoundError</code></td>
+<td>This model needs one more package</td>
+<td>Install the package named in the message</td>
+</tr>
+<tr>
+<td><code>FAILED: ImportError</code> or <code>AttributeError</code></td>
+<td>This model needs another <code>transformers</code></td>
+<td>See <a href="#7-other-models">other models</a></td>
+</tr>
+<tr>
+<td><code>FAILED:</code> with <code>401</code> or <code>gated</code></td>
+<td>The model asks you to accept its terms</td>
+<td>Accept them on its Hugging Face page, then run <code>hf auth login</code></td>
+</tr>
+<tr>
+<td><code>FAILED:</code> with <code>out of memory</code></td>
+<td>The card is too small, or already in use</td>
+<td>Run <code>nvidia-smi</code> to see who uses it. <a href="#choose-a-card">Choose another card</a> or a smaller model</td>
+</tr>
+<tr>
+<td><code>Read as:  NOT UNDERSTOOD</code></td>
+<td>The reader found neither yes nor no</td>
+<td>Add the words of the answer to <code>task.answers</code>. If the answer is cut, raise <code>inference.max_new_tokens</code></td>
+</tr>
+<tr>
+<td><code>! model_note</code></td>
+<td>A setting may not be applied by this model</td>
+<td>See the <a href="documentation.html#generative-models-through-vlmevalkit">notes on settings</a></td>
+</tr>
+<tr>
+<td><code>Did not detect the .env file</code></td>
+<td>VLMEvalKit looks for API keys</td>
+<td>Nothing: local models do not need them</td>
+</tr>
+</tbody>
+</table></div>
+<p>The command ends with an error if a model gave no answer, so it can stop a script before a long run.</p>
+<h2 id="5-start-the-run">5. Start the run</h2>
+<p>Start it so that it survives when you log out:</p>
+<pre><code class="language-bash">nohup vlmshift all experiment.yaml analysis.yaml &gt; run.log 2&gt;&amp;1 &amp;
+</code></pre>
+<p>To follow it, read the log. <code>Ctrl+C</code> stops the reading, not the run:</p>
+<pre><code class="language-bash">tail -f run.log
+</code></pre>
+<p>Each model prints one line per minute:</p>
+<pre><code class="language-text">  smolvlm: 240 of 2000, 0 errors, about 52 min left
+</code></pre>
+<p>If the errors climb from the start, stop the run and read the messages:</p>
+<pre><code class="language-bash">pkill -u &quot;$USER&quot; -f &quot;vlmshift all&quot;
+</code></pre>
+<p>If the run stops for any reason, start the same command again. Answers already obtained are kept, and only the missing ones are asked.</p>
+<h3 id="choose-a-card">Choose a card</h3>
+<p>To use the second card of the server, start the line with its number. Cards are numbered from 0:</p>
+<pre><code class="language-bash">CUDA_VISIBLE_DEVICES=1 nohup vlmshift all experiment.yaml analysis.yaml &gt; run.log 2&gt;&amp;1 &amp;
+</code></pre>
+<p>On a shared cluster with Slurm, put <code>vlmshift all experiment.yaml analysis.yaml</code> in your job script. Your administrators can tell you how to ask for a card.</p>
+<h2 id="6-bring-the-results-back">6. Bring the results back</h2>
+<p>The last line of <code>run.log</code> gives the path of <code>report.md</code>. Copy its whole folder to your computer, replacing the path with yours:</p>
+<pre><code class="language-bash">scp -r user@server:my_experiment/workspace/runs/RUN/analyses/ANALYSIS/report .
+</code></pre>
+<p>Open <code>report.md</code>, then see <a href="tutorial.html#7-read-your-results">read your results</a>. To change the analysis, edit <code>analysis.yaml</code> on the server and run the same command again: no model is called.</p>
+<h2 id="7-other-models">7. Other models</h2>
+<p>Add a line under <code>models</code> in <code>experiment.yaml</code>. The <code>id</code> is the name of the model in the <a href="https://github.com/open-compass/VLMEvalKit/blob/3c192143007e4eb3f5c1a36558a4f8c1451980cb/vlmeval/config.py">VLMEvalKit catalogue</a>:</p>
+<pre><code class="language-yaml">models:
+  - {name: smolvlm, adapter: vlmevalkit, id: SmolVLM-256M}
+  - {name: smolvlm-500, adapter: vlmevalkit, id: SmolVLM-500M}
+</code></pre>
+<p>VLMEvalKit recommends a <a href="https://github.com/open-compass/VLMEvalKit/blob/3c192143007e4eb3f5c1a36558a4f8c1451980cb/README.md"><code>transformers</code> version for each family</a>. If a family needs another version, give it its own environment, then write its name in place of <code>VERSION</code> and <code>MODEL</code>:</p>
+<pre><code class="language-bash">deactivate
+</code></pre>
+<pre><code class="language-bash">python3.11 -m venv ../VLMShift/.venv-other
+</code></pre>
+<pre><code class="language-bash">source ../VLMShift/.venv-other/bin/activate
+</code></pre>
+<pre><code class="language-bash">pip install -e ../VLMShift -r ../VLMShift/environments/vlmevalkit.txt &quot;transformers==VERSION&quot;
+</code></pre>
+<p>Then do the OpenCV swap at the end of <a href="#3-install">step 3</a> in this environment too.</p>
+<pre><code class="language-bash">vlmshift check experiment.yaml --only MODEL
+</code></pre>
+<pre><code class="language-bash">vlmshift run experiment.yaml --only MODEL
+</code></pre>
+<p>All the models fill the same run, so the report compares them.</p>
+<h2 id="8-for-a-result-you-want-to-publish">8. For a result you want to publish</h2>
+<p><strong>Fix the weights.</strong> Write the <code>revision</code> of each model. Without it, the weights can change between two runs:</p>
+<pre><code class="language-yaml">models:
+  - {name: smolvlm, adapter: vlmevalkit, id: SmolVLM-256M, revision: 7e3e67edbbed1bf9888184d9df282b700a323964}
+</code></pre>
+<p><strong>Keep the versions.</strong> Each run records its libraries and models in <code>run_log.json</code>, in the run folder.</p>
+<h2 id="if-the-disk-or-the-network-is-limited">If the disk or the network is limited</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pip install</code> stops on <code>polygon3</code> with <code>Python.h</code></td>
+<td>Ask your administrators for the Python headers (<code>python3.11-dev</code> on Ubuntu)</td>
+</tr>
+<tr>
+<td>Little space in your home folder</td>
+<td>Run <code>export HF_HOME=/path/with/space</code> before any command. The weights go there</td>
+</tr>
+<tr>
+<td>The card has no internet access</td>
+<td>On a machine that has it, run <code>hf download HuggingFaceTB/SmolVLM-256M-Instruct</code> with the same <code>HF_HOME</code>. Then run <code>export HF_HUB_OFFLINE=1</code> before starting</td>
+</tr>
+</tbody>
+</table></div>
+</main>
+</body>
+</html>

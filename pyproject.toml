@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vlmshift"
+version = "0.1.0"
+description = "Measures how a VLM's answers change when one or more conditions change."
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "pandas",
+    "pyarrow",
+    "pydantic>=2",
+    "ruamel.yaml",
+    "scikit-learn",
+    "pillow",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "markdown-it-py", "nbformat"]
+# Contrastive models, generative models through Hugging Face, small LLM: see also environments/.
+local = ["torch", "transformers", "accelerate"]
+
+[project.scripts]
+vlmshift = "vlmshift.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

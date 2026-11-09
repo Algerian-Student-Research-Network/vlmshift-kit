@@ -1,0 +1,392 @@
+{
+  "$defs": {
+    "Answers": {
+      "additionalProperties": false,
+      "properties": {
+        "yes": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Yes",
+          "type": "array"
+        },
+        "no": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "No",
+          "type": "array"
+        }
+      },
+      "required": [
+        "yes",
+        "no"
+      ],
+      "title": "Answers",
+      "type": "object"
+    },
+    "Axis": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "controlled",
+            "observed"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "Axis",
+      "type": "object"
+    },
+    "Contrastive": {
+      "additionalProperties": false,
+      "properties": {
+        "positive_template": {
+          "title": "Positive Template",
+          "type": "string"
+        },
+        "negative_template": {
+          "title": "Negative Template",
+          "type": "string"
+        }
+      },
+      "required": [
+        "positive_template",
+        "negative_template"
+      ],
+      "title": "Contrastive",
+      "type": "object"
+    },
+    "Inference": {
+      "additionalProperties": false,
+      "properties": {
+        "temperature": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Temperature",
+          "type": "number"
+        },
+        "max_new_tokens": {
+          "default": 16,
+          "exclusiveMinimum": 0,
+          "title": "Max New Tokens",
+          "type": "integer"
+        },
+        "retries": {
+          "default": 2,
+          "minimum": 0,
+          "title": "Retries",
+          "type": "integer"
+        }
+      },
+      "title": "Inference",
+      "type": "object"
+    },
+    "ModelConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "adapter": {
+          "title": "Adapter",
+          "type": "string"
+        },
+        "id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revision"
+        },
+        "params": {
+          "additionalProperties": true,
+          "default": {},
+          "title": "Params",
+          "type": "object"
+        },
+        "embeddings": {
+          "default": false,
+          "title": "Embeddings",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "adapter"
+      ],
+      "title": "ModelConfig",
+      "type": "object"
+    },
+    "ReaderLLM": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revision"
+        },
+        "validation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validation"
+        }
+      },
+      "required": [
+        "model"
+      ],
+      "title": "ReaderLLM",
+      "type": "object"
+    },
+    "Roles": {
+      "additionalProperties": false,
+      "properties": {
+        "image": {
+          "default": "image",
+          "title": "Image",
+          "type": "string"
+        },
+        "question": {
+          "default": "question",
+          "title": "Question",
+          "type": "string"
+        },
+        "label": {
+          "default": "label",
+          "title": "Label",
+          "type": "string"
+        },
+        "sample_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sample Id"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "original_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Original Id"
+        },
+        "positive_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Positive Text"
+        },
+        "negative_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Negative Text"
+        }
+      },
+      "title": "Roles",
+      "type": "object"
+    },
+    "TaskConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "yes_no",
+          "title": "Type",
+          "type": "string"
+        },
+        "template": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Template"
+        },
+        "answers": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Answers"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Answers"
+        },
+        "reader_llm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReaderLLM"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "contrastive": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Contrastive"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "TaskConfig",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "data": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      ],
+      "title": "Data"
+    },
+    "workspace": {
+      "default": "./workspace",
+      "title": "Workspace",
+      "type": "string"
+    },
+    "roles": {
+      "$ref": "#/$defs/Roles"
+    },
+    "axes": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Axis"
+      },
+      "minProperties": 1,
+      "title": "Axes",
+      "type": "object"
+    },
+    "task": {
+      "$ref": "#/$defs/TaskConfig"
+    },
+    "models": {
+      "items": {
+        "$ref": "#/$defs/ModelConfig"
+      },
+      "minItems": 1,
+      "title": "Models",
+      "type": "array"
+    },
+    "inference": {
+      "$ref": "#/$defs/Inference"
+    }
+  },
+  "required": [
+    "schema_version",
+    "data",
+    "axes",
+    "task",
+    "models"
+  ],
+  "title": "ExperimentConfig",
+  "type": "object"
+}

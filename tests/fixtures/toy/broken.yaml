@@ -1,0 +1,19 @@
+# Configuration of the broken table: used to check each edge case of step 1.
+schema_version: 1
+data: broken.csv
+workspace: ./workspace
+
+roles:
+  sample_id: sample
+  unit: subject
+  original_id: id
+
+axes:
+  language: {type: controlled}
+  device:   {type: observed}
+
+task:
+  type: yes_no
+
+models:
+  - {name: fake-gen, adapter: fake_generative}

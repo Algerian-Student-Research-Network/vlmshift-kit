@@ -1,0 +1,17 @@
+image,question,positive_text,negative_text,label,language,site,subject
+images/img1.png,Is there a circle in this image? Answer yes or no.,a picture with a circle,a picture with no circle,positive,EN,A,subj1
+images/img1.png,Y a-t-il un cercle dans cette image ? Répondez par oui ou non.,une image avec un cercle,une image sans cercle,positive,FR,A,subj1
+images/img2.png,Is there a circle in this image? Answer yes or no.,a picture with a circle,a picture with no circle,negative,EN,A,subj1
+images/img2.png,Y a-t-il un cercle dans cette image ? Répondez par oui ou non.,une image avec un cercle,une image sans cercle,negative,FR,A,subj1
+images/img3.png,Is there a circle in this image? Answer yes or no.,a picture with a circle,a picture with no circle,positive,EN,A,subj2
+images/img3.png,Y a-t-il un cercle dans cette image ? Répondez par oui ou non.,une image avec un cercle,une image sans cercle,positive,FR,A,subj2
+images/img4.png,Is there a circle in this image? Answer yes or no.,a picture with a circle,a picture with no circle,negative,EN,A,subj2
+images/img4.png,Y a-t-il un cercle dans cette image ? Répondez par oui ou non.,une image avec un cercle,une image sans cercle,negative,FR,A,subj2
+images/img5.png,Is there a circle in this image? Answer yes or no.,a picture with a circle,a picture with no circle,positive,EN,B,subj3
+images/img5.png,Y a-t-il un cercle dans cette image ? Répondez par oui ou non.,une image avec un cercle,une image sans cercle,positive,FR,B,subj3
+images/img6.png,Is there a circle in this image? Answer yes or no.,a picture with a circle,a picture with no circle,negative,EN,B,subj3
+images/img6.png,Y a-t-il un cercle dans cette image ? Répondez par oui ou non.,une image avec un cercle,une image sans cercle,negative,FR,B,subj3
+images/img7.png,Is there a circle in this image? Answer yes or no.,a picture with a circle,a picture with no circle,unknown,EN,B,subj4
+images/img7.png,Y a-t-il un cercle dans cette image ? Répondez par oui ou non.,une image avec un cercle,une image sans cercle,unknown,FR,B,subj4
+images/img8.png,Is there a circle in this image? Answer yes or no.,a picture with a circle,a picture with no circle,unknown,EN,B,subj4
+images/img8.png,Y a-t-il un cercle dans cette image ? Répondez par oui ou non.,une image avec un cercle,une image sans cercle,unknown,FR,B,subj4

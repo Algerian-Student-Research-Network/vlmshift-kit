@@ -1,0 +1,23 @@
+# Toy analysis: the thresholds are lowered, because there are only 4 units (section 7.5).
+schema_version: 1
+# Replaced by `vlmshift all`. For `vlmshift analyze`, pass --run <path printed by `vlmshift run`>.
+run: runs/to-replace
+
+axes:
+  language: {reference: EN}
+
+measures:
+  - {name: language, compare: language}
+  - {name: site, compare: site}
+  - {name: language_by_site, compare: language, split_by: [site]}
+
+stats:
+  bootstrap: 200
+  min_units: 1
+
+latent:
+  targets: [site, label]
+  folds: 2
+
+report:
+  notice: "Toy dataset: these numbers are only for testing the tool."

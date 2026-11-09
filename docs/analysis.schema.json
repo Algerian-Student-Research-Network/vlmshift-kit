@@ -1,0 +1,197 @@
+{
+  "$defs": {
+    "AxisSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "reference": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference"
+        },
+        "levels": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Levels"
+        }
+      },
+      "title": "AxisSettings",
+      "type": "object"
+    },
+    "Latent": {
+      "additionalProperties": false,
+      "properties": {
+        "targets": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Targets",
+          "type": "array"
+        },
+        "folds": {
+          "default": 5,
+          "minimum": 2,
+          "title": "Folds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "targets"
+      ],
+      "title": "Latent",
+      "type": "object"
+    },
+    "Measure": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "compare": {
+          "title": "Compare",
+          "type": "string"
+        },
+        "split_by": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Split By",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "compare"
+      ],
+      "title": "Measure",
+      "type": "object"
+    },
+    "Report": {
+      "additionalProperties": false,
+      "properties": {
+        "notice": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notice"
+        }
+      },
+      "title": "Report",
+      "type": "object"
+    },
+    "Stats": {
+      "additionalProperties": false,
+      "properties": {
+        "bootstrap": {
+          "default": 2000,
+          "minimum": 100,
+          "title": "Bootstrap",
+          "type": "integer"
+        },
+        "alpha": {
+          "default": 0.05,
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Alpha",
+          "type": "number"
+        },
+        "seed": {
+          "default": 0,
+          "title": "Seed",
+          "type": "integer"
+        },
+        "min_units": {
+          "default": 30,
+          "minimum": 1,
+          "title": "Min Units",
+          "type": "integer"
+        }
+      },
+      "title": "Stats",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "run": {
+      "title": "Run",
+      "type": "string"
+    },
+    "axes": {
+      "additionalProperties": {
+        "$ref": "#/$defs/AxisSettings"
+      },
+      "default": {},
+      "title": "Axes",
+      "type": "object"
+    },
+    "measures": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/Measure"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Measures"
+    },
+    "stats": {
+      "$ref": "#/$defs/Stats"
+    },
+    "latent": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Latent"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "report": {
+      "$ref": "#/$defs/Report"
+    }
+  },
+  "required": [
+    "schema_version",
+    "run"
+  ],
+  "title": "AnalysisConfig",
+  "type": "object"
+}

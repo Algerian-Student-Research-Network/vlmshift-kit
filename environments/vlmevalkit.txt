@@ -1,0 +1,12 @@
+# Generative models. Full guide: docs/server.md
+# Needs Linux, an NVIDIA card, Python 3.11, git and a C compiler (gcc).
+# Some models need extra packages: see their VLMEvalKit page.
+torch
+huggingface_hub
+# The code of the catalog below was compared with this version. Some older model
+# families need another one, in an environment of their own: see docs/server.md.
+transformers==5.22.2
+# Imported by VLMEvalKit when it loads, but missing from its own list.
+rouge-score
+# Pinned version: the model catalog and its code can change from one commit to the next.
+vlmeval @ git+https://github.com/open-compass/VLMEvalKit.git@3c192143007e4eb3f5c1a36558a4f8c1451980cb

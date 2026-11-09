@@ -1,0 +1,28 @@
+# Toy experiment: runs in a few seconds, without a GPU.
+schema_version: 1
+data: toy.csv
+workspace: ./workspace
+
+roles:
+  unit: subject
+  positive_text: positive_text
+  negative_text: negative_text
+
+axes:
+  language: {type: controlled}
+  site:     {type: observed}
+
+task:
+  type: yes_no
+  answers:
+    yes: ["yes", "oui"]
+    no:  ["no", "non"]
+  # Fake small LLM: it reads what the list does not recognize (here, nothing escapes it).
+  reader_llm:
+    model: fake_reader
+    validation: annotated_answers.csv
+
+models:
+  - {name: fake-gen, adapter: fake_generative}                       # with a "maybe" and a failure
+  - {name: fake-clean, adapter: fake_generative, params: {faults: false}}  # without incidents
+  - {name: fake-clip, adapter: fake_contrastive, embeddings: true}

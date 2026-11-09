@@ -1,0 +1,14 @@
+schema_version: 1
+# Replaced by paper.py, so by run.sh. For `vlmshift analyze`, pass --run.
+run: runs/to-replace
+
+axes:
+  language: {reference: EN}
+
+# A cell of the paper is a source and a concept: each language shift is measured cell by cell.
+# The sources share few concepts, so they are compared in paper.py (domain × language), not here.
+measures:
+  - {name: language, compare: language, split_by: [site, concept]}
+
+latent:
+  targets: [site, label]

@@ -1,0 +1,9 @@
+axis,level,n_lines,n_samples,n_units,n_positive,n_negative,n_unknown
+language,EN,8,8,4,3,3,2
+language,FR,8,8,4,3,3,2
+site,A,8,4,2,4,4,0
+site,B,8,4,2,2,2,4
+language x site,EN x A,4,4,2,2,2,0
+language x site,EN x B,4,4,2,1,1,2
+language x site,FR x A,4,4,2,2,2,0
+language x site,FR x B,4,4,2,1,1,2
