@@ -66,7 +66,7 @@ To cite, also in `references.bib`:
 - Script: `prepare/nigeria.py`
 - How to get it: Sign in to Kaggle and download the dataset. Put archive.zip in this folder as it is: it is extracted by python -m prepare. The kaggle command names it nigeria-chest-x-ray-dataset.zip: rename it. Page: https://www.kaggle.com/datasets/aminumusa/nigeria-chest-x-ray-dataset
 - File checked: `nigeria/archive.zip`, SHA-256 not recorded yet: `python check.py` prints it once the data is there
-- Note: Its 2,600 file names and sizes are those of two other Kaggle sets, the COVID-19 Radiography Database and the Tuberculosis (TB) Chest X-ray Database: the images may not come from Nigeria (docs/decisions.md).
+- Note: Its 2,600 file names and sizes are those of two other Kaggle sets, the COVID-19 Radiography Database and the Tuberculosis (TB) Chest X-ray Database: the images may not come from Nigeria.
 
 To cite, also in `references.bib`:
 

@@ -1,6 +1,6 @@
 """Normal/Pneumonia of Epic Chittagong (Bangladesh): 2,626 images in the archive of version 3.
 
-No patient number: each image is its own patient (a limit, docs/decisions.md).
+No patient number: each image is its own patient (a limit).
 """
 from pathlib import Path
 

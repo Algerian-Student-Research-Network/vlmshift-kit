@@ -921,7 +921,7 @@ packages/med/
 | `tests/` | Same organization as `src/vlmshift/`. The shared test set and its expected results in `tests/fixtures/` (7.5) |
 | `examples/` | POPE mini (`examples/pope_mini/`): 100 photos of POPE asked to CLIP, without GPU, and compared with the published results |
 | `environments/` | One Python environment file per model family. Docker containers later |
-| `docs/` | `design.md`, `decisions.md` |
+| `docs/` | `design.md` |
 
 ### 6.5 Working folder (what the tool produces)
 

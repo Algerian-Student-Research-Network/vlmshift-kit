@@ -1,6 +1,6 @@
 """Nigeria Chest X-ray: 2,600 images in four classes of 650 (COVID, NORMAL, PNEUMONIA, TB).
 
-No patient number: each image is its own patient (a limit, docs/decisions.md).
+No patient number: each image is its own patient (a limit).
 """
 from pathlib import Path
 
@@ -22,7 +22,7 @@ SOURCE = {
     "license": "CC BY-NC-SA 4.0, as declared on Kaggle",
     "sha256": None,
     "note": "Its 2,600 file names and sizes are those of two other Kaggle sets, the COVID-19 Radiography Database "
-            "and the Tuberculosis (TB) Chest X-ray Database: the images may not come from Nigeria (docs/decisions.md).",
+            "and the Tuberculosis (TB) Chest X-ray Database: the images may not come from Nigeria.",
     "bibtex": """@misc{musa2024nigeria,
   author = {Musa, Aminu and Adamu, Mariya Ibrahim and Kakudi, Habeebah Adamu and Lawal, Yusuf},
   title = {Nigeria Chest X-ray Dataset},

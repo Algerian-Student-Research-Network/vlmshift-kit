@@ -1,6 +1,6 @@
 """Tuberculosis Chest X-rays (Pakistan): 2,494 tuberculosis and 514 normal images of a local hospital.
 
-No patient number: each image is its own patient (a limit, docs/decisions.md).
+No patient number: each image is its own patient (a limit).
 """
 from pathlib import Path
 

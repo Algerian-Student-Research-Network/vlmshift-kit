@@ -5,7 +5,7 @@
 # answer is always YES or NO in English, whatever the language of the question.
 #
 # The paper names neither its 35 concepts nor its wordings: this bank is rebuilt from the labels
-# of the 11 sources (docs/decisions.md). The translations must be checked by a doctor who speaks
+# of the 11 sources. The translations must be checked by a doctor who speaks
 # the language before any result is published.
 templates:
   EN:

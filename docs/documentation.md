@@ -593,4 +593,4 @@ python tools/site/build.py
 - **Probe**: contrastive models only, because VLMEvalKit gives no access to the vectors of generative models.
 - **Med package**: its 11 sources are tested on fake raw folders shaped like the real ones. Only Montgomery has run on the real data, and none of its 10 models on its real weights. Its 35 concepts and their translations are rebuilt, not those of the paper.
 
-The [design](design.md) describes what is planned, and the [decisions](decisions.md) record why each choice was made.
+The [design](design.md) describes what is planned.

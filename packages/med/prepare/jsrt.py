@@ -2,7 +2,7 @@
 
 The free edition is two zips of DICOM images (Nodule154images, NonNodule93images). They are read
 inside the zips, and written once as PNG under converted/jsrt. No patient number: each image is
-its own patient (a limit, docs/decisions.md).
+its own patient (a limit).
 """
 import io
 import zipfile

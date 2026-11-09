@@ -1,7 +1,7 @@
 """Shenzhen Hospital CXR Set (China): 336 tuberculosis and 326 normal images of Shenzhen No. 3 People's Hospital.
 
 Only the folder CXR_png is read: the masks of the annotations are PNG files too. No patient
-number: each image is its own patient (a limit, docs/decisions.md).
+number: each image is its own patient (a limit).
 """
 from pathlib import Path
 

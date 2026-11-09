@@ -1,7 +1,7 @@
 """PTX-498 (China): 498 images with a pneumothorax, from three hospitals (SiteA 247, SiteB 179, SiteC 72).
 
 Each image comes with its mask: only the files <n>.1.img.png are images. No patient number: each
-image is its own patient (a limit, docs/decisions.md).
+image is its own patient (a limit).
 """
 from pathlib import Path
 

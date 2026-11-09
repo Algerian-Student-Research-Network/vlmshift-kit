@@ -4,7 +4,7 @@
     python tools/site/build.py --check    fails if something is out of date
     python tools/site/build.py --home-fragment page.html    also writes the home page without its <html> shell
 
-Tutorial, server guide, Colab guide, documentation, design and decisions are written in Markdown, so they also read
+Tutorial, server guide, Colab guide, documentation and design are written in Markdown, so they also read
 well on GitHub. Here they become pages of the site. The file guide comes from file_map.py.
 """
 import argparse
@@ -26,7 +26,7 @@ FONTS = ("family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400"
 MENU = [("tutorial.html", "Tutorial"), ("files.html", "File guide"), ("documentation.html", "Documentation")]
 MARKDOWN_PAGES = {
     "tutorial": "Tutorial", "server": "NVIDIA server", "colab": "Colab and Kaggle", "documentation": "Documentation",
-    "design": "Design", "decisions": "Decisions",
+    "design": "Design",
 }
 
 

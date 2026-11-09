@@ -1,7 +1,7 @@
 """Montgomery County CXR Set (USA): 58 tuberculosis and 80 normal posteroanterior images.
 
 Only the folder CXR_png is read: the lung masks are PNG files too, with the same names. No
-patient number: each image is its own patient (a limit, docs/decisions.md).
+patient number: each image is its own patient (a limit).
 """
 from pathlib import Path
 

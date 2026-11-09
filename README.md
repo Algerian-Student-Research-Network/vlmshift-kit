@@ -5,8 +5,7 @@
 <p align="center">
   <a href="docs/tutorial.md">Tutorial</a> &nbsp;·&nbsp;
   <a href="docs/documentation.md">Documentation</a> &nbsp;·&nbsp;
-  <a href="docs/server.md">NVIDIA server guide</a> &nbsp;·&nbsp;
-  <a href="docs/decisions.md">Decisions</a>
+  <a href="docs/server.md">NVIDIA server guide</a>
 </p>
 
 Show a model the same image with the same question, in English and then in Hindi. Does it answer the same way? Is it wrong more often? Does it depend on where the image comes from?
@@ -119,7 +118,6 @@ Many local models of VLMEvalKit require an NVIDIA card: follow the [NVIDIA serve
 | [Documentation](docs/documentation.md) | Find any feature, option or output |
 | [Project site](docs/index.html) | Choose between the tutorial, the file guide and the documentation |
 | [Design](docs/design.md) | Read the full specification and formulas |
-| [Decisions](docs/decisions.md) | See why each choice was made |
 
 To view the site, open `docs/index.html` in a browser. On GitHub, `.github/workflows/pages.yml` publishes it with GitHub Pages at each push to `main`.
 

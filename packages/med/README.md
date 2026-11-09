@@ -34,7 +34,7 @@ The CheXzero weights are not on Hugging Face: put `best_64_5e-05_original_22000_
 
 ## Labels
 
-Each source codes its labels in its own way: `label_rules/<source>.py` turns that code into positive, negative or unknown. Only what a source states becomes a negative: a finding it does not mention stays unknown, and unknown is never asked. The choices for each source are in [docs/decisions.md](../../docs/decisions.md).
+Each source codes its labels in its own way: `label_rules/<source>.py` turns that code into positive, negative or unknown. Only what a source states becomes a negative: a finding it does not mention stays unknown, and unknown is never asked. The docstring of each rule gives its choices.
 
 ## Add a source
 
