@@ -4,7 +4,7 @@ import pytest
 
 from vlmshift.cli import do_prepare
 from vlmshift.common import VLMShiftError, canonical, sha16
-from vlmshift.config.load import config_hash, load_experiment, read_yaml, write_yaml
+from vlmshift.config.load import ADDED_KEYS, config_hash, load_experiment, read_yaml, write_yaml
 from vlmshift.extensions import register_adapter
 from vlmshift.inference.adapters.fake import FakeGenerative, has_circle, image_number
 from vlmshift.inference.runner import run_inference
@@ -101,6 +101,6 @@ def test_keys_added_later_do_not_move_an_older_fingerprint(toy):
     """An experiment written before answer_sets existed keeps its run folder."""
     config = load_experiment(toy / "experiment.yaml")
     before = config.model_dump(exclude={"data", "workspace", "run"})
-    for key in ("answer_sets", "answers_by"):
+    for key in ADDED_KEYS & set(before["task"]):
         assert before["task"].pop(key) is None
     assert config_hash(config) == sha16(canonical([before]))
