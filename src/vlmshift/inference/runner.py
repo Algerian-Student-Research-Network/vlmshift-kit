@@ -199,13 +199,14 @@ def read_output(output: dict, task, answers, reader) -> dict:
 
 
 def result_rows(variants, questions, name, run_id, outputs, errors, task, answers, reader) -> list[dict]:
-    """One row per variant. `questions` gives the question of each variant, the key of the cache."""
+    """One row per variant. `questions` gives the question of each variant, the key of the cache,
+    and `answers` the answer lists that read it."""
     rows = []
-    for id, q in zip(variants["id"], questions):
+    for id, q, lists in zip(variants["id"], questions, answers):
         row = {"id": id, "model": name, "run": run_id}
         if q in outputs:
             output = {key: value for key, value in outputs[q].items() if key != "q"}
-            read = read_output(output, task, answers, reader)
+            read = read_output(output, task, lists, reader)
             row |= {**output, **read, "status": "valid" if read["decision"] else "INVALID"}
         elif q in errors:
             row |= {"status": "error", "message": errors[q]}
@@ -265,9 +266,17 @@ def answer_lists(config, reader) -> dict | None:
     return None if reader else DEFAULT_ANSWERS
 
 
+def row_answers(config, variants: pd.DataFrame, reader) -> list[dict | None]:
+    """The answer lists of each variant: those of its format when the experiment has several."""
+    if not config.task.answers_by:
+        return [answer_lists(config, reader)] * len(variants)
+    sets = {name: lists.model_dump() for name, lists in config.task.answer_sets.items()}
+    return [sets[name] for name in variants[config.task.answers_by]]
+
+
 def write_results(config, variants, run_id, folder, caches, errors, questions, reader, issues) -> None:
     """Rebuild results.parquet and embeddings.parquet from the caches."""
-    task, answers = get_task(config.task.type), answer_lists(config, reader)
+    task, answers = get_task(config.task.type), row_answers(config, variants.df, reader)
     images = set(variants.df["image_hash"])
     rows, vectors = [], []
     for entry in config.models:

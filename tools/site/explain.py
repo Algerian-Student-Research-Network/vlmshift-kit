@@ -42,6 +42,7 @@ EXPLAIN = {
             "load_experiment": "Loads experiment.yaml. If the answers are in a separate file, it copies them in.",
             "load_analysis": "Loads analysis.yaml. The command line can replace the run it names.",
             "run_path": "Finds the folder of the run to analyse.",
+            "without_unused": "Leaves out the keys added in later versions while they are unused, so older fingerprints do not move.",
             "config_hash": "Computes the fingerprint of a configuration, ignoring paths.",
         }),
     S + "config/schema.py": dict(
@@ -104,7 +105,10 @@ EXPLAIN = {
 
     S + "variants/plan.py": dict(
         goal="The conductor of step 3. It checks that each axis exists, has the texts sent to the models written, then stores the result in a folder named after its fingerprint. Changing the answer lists creates no new variants, because the texts sent stay the same.",
-        fn={"prepare_variants": "Runs the step and returns the variants."}),
+        fn={
+            "check_answer_sets": "With several answer formats, checks that each row names a declared answer list.",
+            "prepare_variants": "Runs the step and returns the variants.",
+        }),
     S + "variants/prompts.py": dict(
         goal="Writes the exact text each model will receive. The template \"Is there {concept}?\" becomes, for example, \"Is there a circle?\". This text is stored, never recomputed: you can always check what the model read. A row missing a value is excluded and flagged.",
         fn={

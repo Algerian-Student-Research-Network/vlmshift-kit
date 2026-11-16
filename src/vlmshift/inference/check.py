@@ -15,7 +15,7 @@ from ..tasks import get_task
 from ..tasks.llm_reader import LLMReader
 from .base import ModelError
 from .run_log import library_versions
-from .runner import answer_lists, attempt, call_model, chosen_models, duration, make_model, read_output
+from .runner import attempt, call_model, chosen_models, duration, make_model, read_output, row_answers
 
 QUESTIONS = 4  # enough to see the levels of the axes, without waiting
 SHOWN_ANSWER = 200  # characters: a long answer already says what it needs to
@@ -71,7 +71,8 @@ def check_model(model, rows: pd.DataFrame, total: int, params: dict, task, answe
             print(f"  ! model_note: {note}")
         for position in range(len(rows)):
             try:
-                results.append(attempt(lambda: ask(model, rows.iloc[[position]], params, task, answers, reader), params["retries"]))
+                results.append(attempt(
+                    lambda: ask(model, rows.iloc[[position]], params, task, answers[position], reader), params["retries"]))
             except ModelError as error:
                 print(f"  FAILED: {error}")
     except ModelError as error:
@@ -97,8 +98,9 @@ def check_models(config, variants: Step, only: list[str] | None = None) -> None:
     show_machine()
     llm = config.task.reader_llm
     reader = LLMReader(llm, config.path(config.workspace)) if llm else None
-    task, answers = get_task(config.task.type), answer_lists(config, reader)
+    task = get_task(config.task.type)
     rows = sample_rows(variants.df, list(config.axes))
+    answers = row_answers(config, rows, reader)
     failed = []
     for entry in chosen_models(config, only):
         model = make_model(config, entry)

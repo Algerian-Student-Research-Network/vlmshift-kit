@@ -84,6 +84,10 @@ class TaskConfig(Block):
     type: Literal["yes_no"]
     template: str | None = None
     answers: Answers | str | None = None  # a path is replaced by its content when read
+    # Several answer formats in one experiment (1/0, A/B, yes/no in each language): one list per
+    # format, and the column that names the format of each row.
+    answer_sets: dict[str, Answers] | None = None
+    answers_by: str | None = None
     reader_llm: ReaderLLM | None = None
     contrastive: Contrastive | None = None
 
@@ -91,6 +95,12 @@ class TaskConfig(Block):
     def valid_template(self):
         if self.template:
             check_template(self.template)
+        return self
+
+    @model_validator(mode="after")
+    def answer_sets_with_their_column(self):
+        if bool(self.answer_sets) != bool(self.answers_by):
+            raise ValueError("answer_sets and answers_by go together: the lists, and the column that names the list of each row")
         return self
 
     def columns(self) -> set[str]:

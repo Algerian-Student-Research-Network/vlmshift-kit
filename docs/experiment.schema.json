@@ -298,6 +298,33 @@
           "default": null,
           "title": "Answers"
         },
+        "answer_sets": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/Answers"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Answer Sets"
+        },
+        "answers_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Answers By"
+        },
         "reader_llm": {
           "anyOf": [
             {
