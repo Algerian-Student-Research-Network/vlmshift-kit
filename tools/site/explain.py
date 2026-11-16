@@ -442,6 +442,13 @@ EXPLAIN = {
             "replay": "Writes the run of an arm from recorded answers.",
             "main": "Replays the arms named on the command line and writes their reports.",
         }),
+    M + "audits.py": dict(
+        goal="Two audits of the paper that are about chest X-ray data. The first asks whether a model does better in the language of the country where the images were acquired: Spanish for the Spanish source, Chinese for the Chinese ones. It reads a measure already computed and computes nothing again. The second looks at the annotated workbook, which has one text column per language: when a language has more distinct texts than English for the same concept, its column carries details of each report. That is why the questions of the paper use the short terms of the bank, never these columns.",
+        fn={
+            "congruence": "Gives the shifts from English to the local language, on the images of each country that has one.",
+            "semantic_audit": "Counts, for each source and concept, the distinct texts of each language column.",
+            "main": "Runs one of the two audits from the command line.",
+        }),
     M + "paper.py": dict(
         goal="Runs the models through Core, then writes the tables of the paper from the run. A cell is a source and a concept. Only the cells where every model has an answer in every language are kept: the complete-case rule. An unreadable answer counts as wrong. The gap of each language with English comes with a 95% interval from 10,000 paired draws of model and cell pairs.",
         fn={

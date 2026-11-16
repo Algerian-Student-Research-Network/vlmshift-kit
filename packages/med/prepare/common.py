@@ -16,6 +16,13 @@ HERE = Path(__file__).parents[1]
 PATIENTS, SEED = 300, 0  # the evaluation core of the paper: 300 patients per source
 IMAGES = (".png", ".jpg", ".jpeg")
 COLUMNS = ["image", "patient", "site", "concept", "label"]
+# Where the images of each source were acquired, as the paper states it. A country describes a
+# source: the unit of a domain shift is the site, and a country is never read as its cause.
+COUNTRIES = {
+    "NIH": "USA", "Montgomery": "USA", "RANZCR": "Australia/New Zealand", "PadChest": "Spain", "Pakistan TB": "Pakistan",
+    "Bangladesh": "Bangladesh", "Nigeria": "Nigeria", "Shenzhen": "China", "PTX-498": "China", "JSRT": "Japan",
+    "RICORD": "International (USA + 3 other sites)",
+}
 
 
 class LayoutError(Exception):
@@ -144,6 +151,7 @@ def write_source(name: str, table: pd.DataFrame, folder: Path = HERE / "data" / 
         raise LayoutError(f"{name}: concepts missing from configs/questions.yaml: {unknown}")
     output = folder / f"{name}.parquet"
     table = sample_patients(table[table["label"].isin(["positive", "negative"])])
-    table = table.assign(image=[relative(path, output.parent) for path in table["image"]])
+    table = table.assign(image=[relative(path, output.parent) for path in table["image"]],
+                         country=table["site"].map(COUNTRIES).fillna("not stated"))
     write_parquet(add_languages(table, bank), output, name)
     return output

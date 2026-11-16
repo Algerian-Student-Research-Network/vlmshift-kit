@@ -12,6 +12,7 @@ from vlmshift.config.load import load_analysis, load_experiment, read_yaml
 MED = ROOT / "packages" / "med"
 sys.path.insert(0, str(MED))
 
+import audits  # noqa: E402
 import bank as med_bank  # noqa: E402
 import plans  # noqa: E402
 import replay  # noqa: E402
@@ -219,3 +220,42 @@ def test_replay_without_prediction_files_says_where_they_are(paper_folder):
     (paper_folder / "preds").mkdir()
     with pytest.raises(VLMShiftError, match="No prediction file"):
         replay.replay(paper_folder / "arms" / "main", paper_folder / "preds", {})
+
+
+# --- audits of the paper ----------------------------------------------------------------------------------------
+
+def test_congruence_reads_the_shift_to_the_language_of_the_country():
+    rows = [dict(measure="language_by_country", mode="valid", metric=metric, model="m", split=f"country={country}",
+                 level_a="EN", level_b=language, value=value, ci_low=value - 0.1, ci_high=value + 0.1, significant=False,
+                 n_units=20, n_samples=20)
+            for country, language, value in (("Spain", "ES", 0.05), ("Spain", "FR", -0.2), ("USA", "ES", 0.3), ("China", "ZH", -0.1))
+            for metric in ("delta_acc", "chg", "delta_sens")]
+    found = audits.congruence(pd.DataFrame(rows))
+    assert found[["country", "local_language"]].drop_duplicates().to_dict("records") == [
+        {"country": "China", "local_language": "ZH"}, {"country": "Spain", "local_language": "ES"}]
+    assert set(found["metric"]) == {"delta_acc", "chg"}  # Spanish in Spain, never French in Spain or Spanish in the USA
+    assert found.loc[(found["country"] == "Spain") & (found["metric"] == "delta_acc"), "value"].item() == 0.05
+    with pytest.raises(VLMShiftError, match="No measure language_by_country"):
+        audits.congruence(pd.DataFrame(rows).assign(measure="language"))
+
+
+def test_semantic_audit_sees_report_details_in_a_translated_column():
+    workbook = pd.DataFrame({
+        "dataset": ["PadChest-GR"] * 3 + ["NIH-ChestXray14"],
+        "radlex_libelle": ["nodule", "nodule; scoliosis", "nodule", "mass"],
+        "text_EN": ["nodule", "nodule", "nodule", "mass"],
+        "text_FR": ["nodule du lobe supérieur droit", "nodule de 8 mm", "nodule", "masse"],
+    })
+    found = audits.semantic_audit(workbook).set_index(["site", "concept"])
+    nodule = found.loc[("PadChest-GR", "nodule")]
+    assert (nodule["n_rows"], nodule["unique_EN"], nodule["unique_FR"], nodule["ratio_FR_vs_EN"]) == (3, 1, 3, 3)
+    assert found.loc[("PadChest-GR", "scoliosis"), "n_rows"] == 1 and found.loc[("NIH-ChestXray14", "mass"), "ratio_FR_vs_EN"] == 1
+    assert found.loc[("PadChest-GR", "nodule"), "unique_ZH"] == 0  # a language column the workbook does not have
+
+
+def test_the_prepared_tables_say_where_each_source_was_acquired(tmp_path):
+    from prepare import common
+
+    table = pd.DataFrame([{"image": str(tmp_path / "a.png"), "patient": "PadChest_1", "site": "PadChest", "concept": "nodule", "label": "positive"}])
+    written = pd.read_parquet(common.write_source("s", table, tmp_path / "tables"))
+    assert set(written["country"]) == {"Spain"} and set(common.COUNTRIES.values()) >= {"USA", "China", "Japan", "Nigeria"}

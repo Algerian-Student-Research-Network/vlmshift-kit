@@ -31,6 +31,7 @@ from vlmshift.config.load import read_yaml, write_yaml
 HERE = Path(__file__).parent
 PLANS = ("eval_plan_core.csv", "eval_plan_core_supp.csv")
 KEY = ["sample_id", "pathology"]
+NOT_A_DEVICE = "Chest X-ray research benchmark. Not a medical device: no number here supports a diagnosis."
 # What a row of a table holds whatever its arm, then what each arm adds.
 COMMON = ["image", "patient", "site", "country", "scanner", "concept", "label", "sample",
           "language", "question", "positive_text", "negative_text"]
@@ -162,7 +163,7 @@ def arm_configs(arm: str, spec: dict, base: dict, table: Path, bank: dict, folde
         "task": task, "models": base["models"], **({"inference": base["inference"]} if "inference" in base else {}),
     }
     analysis = {"schema_version": 1, "run": "runs/to-replace", "stats": {"min_units": 5}, **spec["analysis"],
-                "report": {"notice": f"Arm {arm} of the paper. {spec['about']}"}}
+                "report": {"notice": f"Arm {arm} of the paper. {spec['about']} {NOT_A_DEVICE}"}}
     return experiment, analysis
 
 

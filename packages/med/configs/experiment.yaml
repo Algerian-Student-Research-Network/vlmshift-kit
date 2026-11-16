@@ -1,4 +1,5 @@
-# Medical image benchmark: 11 chest X-ray sources, 35 concepts, 7 languages, 10 models.
+# Medical image benchmark: 11 chest X-ray sources, the concepts of the paper they state, 7 languages, 10 models.
+# The exact sample of the paper is rebuilt by plans.py, from its evaluation plans: see README.md.
 # Each table is written by `python -m prepare`, one script per source in prepare/.
 schema_version: 1
 data:
@@ -23,6 +24,7 @@ roles:
 axes:
   language: {type: controlled}  # the same image and concept, asked in 7 languages
   site:     {type: observed}    # the source: the acquisition domain
+  country:  {type: observed}    # where the source was acquired: it describes the site, it is not a cause
   concept:  {type: observed}    # the finding asked about
 
 task:
