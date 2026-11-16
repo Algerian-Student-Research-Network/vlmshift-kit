@@ -325,6 +325,18 @@
           "default": null,
           "title": "Answers By"
         },
+        "negated": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Negated"
+        },
         "reader_llm": {
           "anyOf": [
             {

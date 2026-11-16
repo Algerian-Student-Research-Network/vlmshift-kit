@@ -88,6 +88,9 @@ class TaskConfig(Block):
     # format, and the column that names the format of each row.
     answer_sets: dict[str, Answers] | None = None
     answers_by: str | None = None
+    # The column that marks the negated questions (1 or 0). The label stays that of the finding:
+    # a yes to "Is there no nodule?" is counted as saying that there is no nodule.
+    negated: str | None = None
     reader_llm: ReaderLLM | None = None
     contrastive: Contrastive | None = None
 

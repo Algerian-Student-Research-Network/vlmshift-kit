@@ -5,11 +5,13 @@ import json
 from itertools import combinations
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from ..common import Issues, code_version, VLMShiftError, to_levels, write_parquet
 from ..config.load import config_hash, load_experiment, run_path, write_yaml
 from ..config.schema import AxisSettings, Measure
+from ..tasks.yes_no import negated_rows
 from .bootstrap import draw_weights, summarize
 from .metrics import Sums, stat_of, unit_sums
 from .pairing import pairing_keys, select
@@ -212,6 +214,11 @@ def run_analysis(config) -> Path:
     lines = results.merge(variants, on="id")
     lines["y"] = lines["label"].map({"positive": 1.0, "negative": 0.0}).astype(float)
     lines["yhat"] = lines["decision"].map({"yes": 1.0, "no": 0.0}).astype(float)
+    if experiment.task.negated:
+        # A yes to a negated question denies the finding. The answer is counted for what it says
+        # about the finding, so it compares with the label and with the plain question.
+        negated = np.array(negated_rows(lines[experiment.task.negated]), dtype=bool)
+        lines["yhat"] = lines["yhat"].where(~negated, 1 - lines["yhat"])
 
     rows = []
     for measure in measures:

@@ -2,6 +2,7 @@
 from ..common import Issues, Step, VLMShiftError, canonical, sha16, write_csv, write_parquet
 from ..data.checks import require_columns
 from ..tasks import get_task
+from ..tasks.yes_no import NEGATED, negated_rows
 from .prompts import add_prompts, templates_for
 
 
@@ -18,9 +19,23 @@ def check_answer_sets(config, table) -> None:
         )
 
 
+def check_negated(config, table) -> None:
+    """The negation column says 1 or 0 on every row: a doubt would decide how an answer is counted."""
+    column = config.task.negated
+    if not column:
+        return
+    require_columns(table, [column], "task.negated")
+    unclear = [value for value, negated in zip(table[column], negated_rows(table[column])) if negated is None]
+    if unclear:
+        raise VLMShiftError(
+            f"task.negated: the column {column} must say {sorted(NEGATED)} on every row, not {sorted(set(map(str, unclear)))}"
+        )
+
+
 def prepare_variants(config, table: Step) -> Step:
     require_columns(table.df, config.axes, "the axes")
     check_answer_sets(config, table.df)
+    check_negated(config, table.df)
     issues = Issues(step=3)
     templates = templates_for(config)
     variants = add_prompts(table.df, config, templates, get_task(config.task.type), issues)

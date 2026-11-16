@@ -107,6 +107,7 @@ EXPLAIN = {
         goal="The conductor of step 3. It checks that each axis exists, has the texts sent to the models written, then stores the result in a folder named after its fingerprint. Changing the answer lists creates no new variants, because the texts sent stay the same.",
         fn={
             "check_answer_sets": "With several answer formats, checks that each row names a declared answer list.",
+            "check_negated": "Checks that the negation column says 1 or 0 on every row.",
             "prepare_variants": "Runs the step and returns the variants.",
         }),
     S + "variants/prompts.py": dict(
@@ -119,8 +120,9 @@ EXPLAIN = {
         goal="Finds the task type from its name. In V1 there is only one: yes_no.",
         fn={"get_task": "Gives the task for a name."}),
     S + "tasks/yes_no.py": dict(
-        goal="Everything specific to yes/no questions. It turns a raw answer such as \"Yes.\" into a yes or no decision, by comparing it to the answer lists. It also says whether a decision is right against the label.",
+        goal="Everything specific to yes/no questions. It turns a raw answer such as \"Yes.\" into a yes or no decision, by comparing it to the answer lists. It also says whether a decision is right against the label, and reads the column that marks negated questions.",
         fn={
+            "negated_rows": "Reads a negation column: negated, not negated, or unclear.",
             "is_noise": "Spots punctuation and spaces, in every language.",
             "clean": "Cleans an answer: lower case, no punctuation at the edges.",
             "YesNoTask": "The yes/no task.",

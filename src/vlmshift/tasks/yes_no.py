@@ -10,6 +10,15 @@ from .base import Task
 DEFAULT_ANSWERS = {"yes": ["yes"], "no": ["no"]}
 
 
+# How a column says that a question is negated ("Is there no nodule?"), or that it is not.
+NEGATED = {"1": True, "true": True, "yes": True, "0": False, "false": False, "no": False}
+
+
+def negated_rows(column) -> list[bool | None]:
+    """For each value of a negation column: negated, not negated, or None when it says neither."""
+    return [NEGATED.get(str(value).strip().lower()) for value in column]
+
+
 def is_noise(char: str) -> bool:
     """Punctuation, space or control character, in every language. Also ` and ~, which format text."""
     return unicodedata.category(char)[0] in "PZC" or char in "`~"
