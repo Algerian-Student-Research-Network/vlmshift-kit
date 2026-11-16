@@ -420,6 +420,28 @@ EXPLAIN = {
             "draft_notice": "Writes what a report must say while some terms are drafts.",
             "gate": "Refuses a run on draft terms unless it was asked for.",
         }),
+    M + "plans.py": dict(
+        goal="Rebuilds the experiments of the paper from its evaluation plans, the lists of what the study sent to the models. The plans name patients and images of sources that cannot be shared again, so they stay out of the repository: you copy them to data/paper/. The script writes one experiment per arm of configs/arms.yaml: the main questions in 7 languages, the answer formats, the negation, the image controls, the degraded images, sentence and term in different languages, a concept that is not that of the image, and Latin letters. Each text is written again from the bank and compared with the plan: one difference stops everything, so a table that is written holds exactly the questions of the paper. All arms share one workspace: a question asked in one arm is not asked again in another.",
+        fn={
+            "read_plans": "Reads the plans of a folder; the supplementary one is optional.",
+            "texts_of": "Writes the question and the pair of a row again, from the bank.",
+            "check_texts": "Stops if a text of the plan is not the one the bank writes.",
+            "local_images": "Replaces the image folders of the study by those of this machine.",
+            "as_table": "Gives the rows of a plan the columns of Core, with the label of the finding.",
+            "arm_rows": "Picks the rows of the plans that make an arm.",
+            "arm_table": "Builds the table of an arm, each row once.",
+            "arm_configs": "Writes experiment.yaml and analysis.yaml of an arm.",
+            "write_arms": "Writes every arm the plans hold.",
+        }),
+    M + "replay.py": dict(
+        goal="Computes the numbers of the paper again without any model. The study kept every answer of every model. This script puts those answers where a run of Core would have written them, then runs the analysis and the report on them. It needs neither the images nor a GPU, so the images are identified by their path and the report says that it is a replay. It is also how the analysis is checked: replayed on the recorded answers, it gives the frame and term effects of the paper.",
+        fn={
+            "table_without_images": "Writes the table of step 1 without opening any image.",
+            "recorded": "Reads every recorded answer of a folder, with the columns of the arm tables.",
+            "results_of": "Turns recorded answers into the results table of Core.",
+            "replay": "Writes the run of an arm from recorded answers.",
+            "main": "Replays the arms named on the command line and writes their reports.",
+        }),
     M + "paper.py": dict(
         goal="Runs the models through Core, then writes the tables of the paper from the run. A cell is a source and a concept. Only the cells where every model has an answer in every language are kept: the complete-case rule. An unreadable answer counts as wrong. The gap of each language with English comes with a 95% interval from 10,000 paired draws of model and cell pairs.",
         fn={
@@ -598,6 +620,8 @@ BLOCKS = {
         items={
             "<source>/": "The raw files of a source, as it gives them: a label file, folders of images, or archives kept as they are.",
             "converted/": "The DICOM images of RICORD and JSRT, written once as PNG.",
+            "arms.yaml": "The arms of the paper: the axes, the task and the analyses of each.",
+            "data/paper/": "Not in the repository: the evaluation plans and the recorded answers of the study, copied from its drive.",
             "questions.yaml, romanized.yaml": "The 35 concepts of the paper in 7 languages, with their RadLex identifier, their validation status and every wording; and the questions in Latin letters.",
             "experiment.yaml, analysis.yaml": "The configurations of the benchmark: 11 tables, 10 models, English as reference.",
         },

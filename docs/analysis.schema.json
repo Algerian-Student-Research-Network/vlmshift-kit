@@ -77,6 +77,11 @@
           "title": "Split By",
           "type": "array"
         },
+        "all_pairs": {
+          "default": false,
+          "title": "All Pairs",
+          "type": "boolean"
+        },
         "by": {
           "default": [],
           "items": {
@@ -241,6 +246,11 @@
           },
           "title": "Split By",
           "type": "array"
+        },
+        "all_pairs": {
+          "default": false,
+          "title": "All Pairs",
+          "type": "boolean"
         }
       },
       "required": [

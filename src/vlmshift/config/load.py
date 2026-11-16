@@ -109,7 +109,7 @@ def run_path(config: AnalysisConfig) -> Path:
 
 # Keys added after the first version of the files. Left unused, they stay out of the fingerprint:
 # a configuration written before them keeps its fingerprint, so its runs are found again.
-ADDED_KEYS = {"answer_sets", "answers_by", "negated", "analyses", "family", "license", "gpu", "validated"}
+ADDED_KEYS = {"answer_sets", "answers_by", "negated", "analyses", "family", "license", "gpu", "validated", "all_pairs"}
 
 
 def without_unused(value):

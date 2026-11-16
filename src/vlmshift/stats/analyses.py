@@ -111,7 +111,7 @@ def analysis_rows(analysis, config, experiment, lines, variants, probes, earlier
     reference = {axis: config.axes.get(axis, AxisSettings()).reference for axis in levels}
     n_cells = len(split_cells(variants, analysis.split_by, levels))
     compare, across = analysis.compare, analysis.across
-    pairs = level_pairs(levels[compare], reference[compare]) if compare else []
+    pairs = level_pairs(levels[compare], None if analysis.all_pairs else reference[compare]) if compare else []
     conditions = [level for level in levels[across] if level != reference[across]] if across else []
 
     if kind == "tests":

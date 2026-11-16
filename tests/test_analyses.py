@@ -335,3 +335,18 @@ def test_without_the_block_the_report_says_so(full_run):
     written = (full_run.report / "report.md").read_text(encoding="utf-8")
     assert "No further analysis declared" in written
     assert pd.read_parquet(full_run.analysis / "analyses.parquet").empty
+
+
+def test_all_pairs_compares_every_pair_although_the_axis_has_a_reference(toy):
+    found = analyze(toy, [{"type": "tests", "compare": "language", "all_pairs": True}])
+    pairs = found[found["statistic"] == "mcnemar_correct"].query("model == 'site-fr'")
+    assert set(zip(pairs["level_a"], pairs["level_b"])) == {("DE", "EN"), ("DE", "FR"), ("EN", "FR")}
+    raw = __import__("vlmshift.config.load", fromlist=["read_yaml"]).read_yaml(toy / "scripted_analysis.yaml")
+    raw["measures"] = [{"name": "language", "compare": "language", "all_pairs": True}]
+    raw["analyses"] = []
+    write_yaml(raw, toy / "scripted_analysis.yaml")
+    run = next(toy.glob("workspace/runs/*"))
+    report = do_analyze(load_analysis(toy / "scripted_analysis.yaml", str(run)))
+    shifts = pd.read_parquet(report.parent / "metrics.parquet").query("metric == 'chg' and mode == 'valid' and model == 'site-fr'")
+    assert set(zip(shifts["level_a"], shifts["level_b"])) == {("DE", "EN"), ("DE", "FR"), ("EN", "FR")}
+    assert shifts["m"].eq(3).all()  # the correction counts the three pairs

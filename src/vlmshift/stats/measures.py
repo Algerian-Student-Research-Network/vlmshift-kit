@@ -99,7 +99,7 @@ def measure_rows(lines, measure, experiment, config, levels: dict, n_cells: int)
     """
     axis = measure.compare
     reference = config.axes.get(axis, AxisSettings()).reference
-    if reference:
+    if reference and not measure.all_pairs:
         pairs = [(reference, level) for level in levels[axis] if level != reference]
     else:
         pairs = list(combinations(levels[axis], 2))

@@ -1,0 +1,132 @@
+# The arms of the paper: one experiment per question the study asks, all on the same samples.
+#
+# plans.py reads the evaluation plans of the paper and writes, for each arm, a table and the two
+# configuration files of Core. The models and the inference settings come from experiment.yaml.
+# Every arm shares one workspace, so a question already asked in one arm is not asked again.
+#
+# axes: the axes of experiment.yaml. task: what the arm adds to the task. analysis: analysis.yaml.
+# Cells of the paper are small (a site and a concept hold 6 to 56 patients), so min_units is 5:
+# read every number with its interval and its count.
+
+main:
+  about: The same image and concept asked in 7 languages, on 11 sources (513 questions).
+  axes: {language: controlled, site: observed, concept: observed, country: observed}
+  analysis:
+    axes: {language: {reference: EN}, site: {reference: NIH-ChestXray14}}
+    measures:
+      - {name: language, compare: language}
+      - {name: language_pairs, compare: language, all_pairs: true}
+      - {name: language_by_site, compare: language, split_by: [site]}
+      - {name: language_by_country, compare: language, split_by: [country]}
+      - {name: language_by_cell, compare: language, split_by: [site, concept]}
+      - {name: site, compare: site}
+    analyses:
+      - {type: tests, compare: language, all_pairs: true, split_by: [site]}
+      - {type: consistency, compare: language, split_by: [site]}
+      - {type: ranking, compare: language, all_pairs: true, split_by: [site]}
+      - {type: ranking, name: ranking_sites, compare: site, all_pairs: true, split_by: [language]}
+      - {type: worst_group, by: [site, language], metric: ba}
+      - {type: standardized, by: [site, language], over: concept}
+      - {type: parser, by: [language]}
+      - {type: heterogeneity, by: [site, language], over: concept}
+      - {type: pareto, by: [site], compare: language, metric: ba}
+      - {type: interaction, name: domain_language, axes: [site, language]}
+      - {type: information, compare: language, split_by: [site]}
+      - {type: regression, axes: [site, language], covariates: [concept]}
+      - {type: variance, axes: [site, language, concept]}
+      - {type: variance, name: variance_country, axes: [country, language, concept]}
+      - {type: link, target: site, of: domain_language}
+    latent: {targets: [site, country, label]}
+
+formats:
+  about: The same question answered by YES/NO, by 1/0 and by A/B (228 questions).
+  axes: {language: controlled, answer_format: controlled}
+  task: {answers_by: answer_format}
+  analysis:
+    axes: {language: {reference: EN}, answer_format: {reference: english_yes_no}}
+    measures:
+      - {name: answer_format, compare: answer_format, all_pairs: true}
+      - {name: answer_format_by_language, compare: answer_format, all_pairs: true, split_by: [language]}
+      - {name: language_by_format, compare: language, split_by: [answer_format]}
+    analyses:
+      - {type: tests, compare: answer_format, all_pairs: true}
+      - {type: consistency, compare: answer_format, split_by: [language]}
+      - {type: parser, by: [answer_format, language]}
+
+negation:
+  about: The plain question and its negation ("Is there no evidence of ...?"), both answered by 1/0.
+  axes: {language: controlled, negated: controlled}
+  task: {answers_by: answer_format, negated: negated}
+  analysis:
+    axes: {language: {reference: EN}, negated: {reference: "0"}}
+    measures:
+      - {name: negation, compare: negated}
+      - {name: negation_by_language, compare: negated, split_by: [language]}
+    analyses:
+      - {type: tests, compare: negated, split_by: [language]}
+      - {type: consistency, compare: negated, split_by: [language]}
+
+controls:
+  about: The same questions on a blank image, the image of another patient, a cropped border, a standardized contrast, and an image of another site with the same label.
+  axes: {language: controlled, image_condition: controlled, site: observed}
+  analysis:
+    axes: {language: {reference: EN}, image_condition: {reference: real}, site: {reference: NIH-ChestXray14}}
+    measures:
+      - {name: image, compare: image_condition}
+      - {name: image_by_language, compare: image_condition, split_by: [language]}
+      - {name: language_by_image, compare: language, split_by: [image_condition]}
+    analyses:
+      - {type: tests, compare: image_condition, split_by: [language]}
+      - {type: disagreement_shift, compare: language, across: image_condition, all_pairs: true}
+      - {type: taxonomy, compare: language, across: image_condition}
+      - {type: interaction, name: image_language, axes: [image_condition, language]}
+      - {type: interaction, name: image_language_site, axes: [image_condition, language, site]}
+      - {type: link, target: site, of: image_language_site}
+    latent: {targets: [site]}
+
+quality:
+  about: The same questions on images blurred or noised at five severities.
+  axes: {language: controlled, image_condition: controlled}
+  analysis:
+    axes: {language: {reference: EN}, image_condition: {reference: real}}
+    measures:
+      - {name: quality, compare: image_condition}
+      - {name: quality_by_language, compare: image_condition, split_by: [language]}
+    analyses:
+      - {type: disagreement_shift, compare: language, across: image_condition, all_pairs: true}
+      - {type: interaction, name: quality_language, axes: [image_condition, language]}
+
+factorial:
+  about: The sentence and the medical term each in English or in another language, answered by 1/0.
+  axes: {frame_language: controlled, term_language: controlled}
+  task: {answers_by: answer_format}
+  analysis:
+    axes: {frame_language: {reference: EN}, term_language: {reference: EN}}
+    measures:
+      - {name: frame, compare: frame_language, split_by: [term_language]}
+      - {name: term, compare: term_language, split_by: [frame_language]}
+    analyses:
+      - {type: interaction, name: frame_term, axes: [frame_language, term_language]}
+
+permutation:
+  about: The same image asked about another concept than its own. The label stays that of the image, so only the answer change and the yes rate are read here, never the accuracy.
+  axes: {language: controlled, term_condition: controlled}
+  analysis:
+    axes: {language: {reference: EN}, term_condition: {reference: "true"}}
+    measures:
+      - {name: permutation, compare: term_condition}
+      - {name: permutation_by_language, compare: term_condition, split_by: [language]}
+    analyses:
+      - {type: tests, compare: term_condition, split_by: [language]}
+
+transliteration:
+  about: Hindi, Chinese and Arabic questions in their script and in Latin letters.
+  axes: {language: controlled, script: controlled}
+  analysis:
+    axes: {script: {reference: native}}
+    measures:
+      - {name: script, compare: script}
+      - {name: script_by_language, compare: script, split_by: [language]}
+    analyses:
+      - {type: tests, compare: script, split_by: [language]}
+      - {type: consistency, compare: script, split_by: [language]}

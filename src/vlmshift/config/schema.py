@@ -181,6 +181,7 @@ class Measure(Block):
     name: str
     compare: str
     split_by: list[str] = []
+    all_pairs: bool = False  # compare every pair of levels, even when the axis has a reference
 
     @model_validator(mode="after")
     def no_common_axis(self):
@@ -212,6 +213,7 @@ class Analysis(Block):
     across: str | None = None        # a second controlled axis: does the comparison change along it?
     axes: list[str] = []             # the axes of an interaction, a regression or a variance split
     split_by: list[str] = []         # computed apart in each cell of these axes
+    all_pairs: bool = False          # tests, ranking, disagreement_shift: every pair of levels of `compare`
     by: list[str] = []               # the groups of worst_group, standardized, heterogeneity, pareto
     over: str | None = None          # the axis standardized over, or whose spread is measured
     covariates: list[str] = []       # regression: axes adjusted for, without interaction
