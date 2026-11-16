@@ -7,7 +7,7 @@ LIMIT = 10
 
 EXPLAIN = {
     S + "cli.py": dict(
-        goal="The front door. When you type a command such as vlmshift all, this file starts. It computes nothing itself: it starts the steps in the right order and prints where the results are. Each command first redoes the steps before it, so there is nothing to remember between two commands.",
+        goal="The front door. When you type a command such as vlmshift all, this file starts. It computes nothing itself: it starts the steps in the right order and prints where the results are. The conditions command, which writes a table on changed images, is run by data/conditions.py. Each command first redoes the steps before it, so there is nothing to remember between two commands.",
         fn={
             "show_issues": "Prints the issues of a step, one line per kind, so that none stays hidden in a file.",
             "do_init": "Makes the starting files from a folder of images.",
@@ -92,6 +92,20 @@ EXPLAIN = {
             "check_axes": "Warns when an axis has one level only: there is nothing to compare.",
         }),
 
+    S + "data/conditions.py": dict(
+        goal="Asks the same questions on changed images, to see what a model really takes from the image. The command vlmshift conditions reads the table of an experiment and writes a larger one, next to the changed images: each row once per condition, with a new column to declare as a controlled axis. A blank or shuffled image removes the evidence; a blur, some noise or a strong JPEG degrades it; an image of another site with the same label changes only where it comes from. The rows of a sample keep their sample_id, so each condition is compared with the original image. Everything is deterministic, and a mask needs boxes drawn by someone: no position is invented.",
+        fn={
+            "parse_conditions": "Reads the conditions asked for: blur gives its five severities, blur:3 one of them.",
+            "open_gray_or_color": "Opens an image in 8 bits, scaling a 16-bit one.",
+            "stable_number": "Gives a number that depends only on its parts, the same on every machine.",
+            "changed": "Applies one condition to one image.",
+            "shuffled": "Gives each image another image of its group, never its own.",
+            "swapped": "Gives each row an image of another site with the same label and concept.",
+            "read_boxes": "Reads the boxes drawn by someone, for the masks.",
+            "relative": "Writes a path relative to the new table when it can.",
+            "write_conditions": "Writes the changed images and the table that asks every question under every condition.",
+            "conditions_command": "Runs the command and prints what to do next.",
+        }),
     S + "audit/counts.py": dict(
         goal="The conductor of step 2. It counts what the table holds: rows, samples, units and labels, for each level of each axis, then for all axes crossed. It flags what falls under 30 units. It never changes the table.",
         fn={

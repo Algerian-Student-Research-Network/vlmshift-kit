@@ -13,7 +13,7 @@ from explain import AD, BLOCKS, EXPLAIN, LIMIT, M, S
 ROOT = Path(__file__).parents[2]
 
 ROLES = {
-    S + "cli.py": "The commands: init, import, audit, prepare, check, run, analyze, all",
+    S + "cli.py": "The commands: init, conditions, import, audit, prepare, check, run, analyze, all",
     S + "data/starter.py": "Makes a table and two YAML files from a folder of images",
     S + "config/load.py": "Reads the YAML files, checks them, fingerprints them",
     S + "config/schema.py": "The rules of the two configuration files",
@@ -24,6 +24,7 @@ ROLES = {
     S + "data/io.py": "Reads CSV and Parquet, everything as text",
     S + "data/ids.py": "Computes sample_id and the id of each row",
     S + "data/checks.py": "Standard names, image fingerprints, checks",
+    S + "data/conditions.py": "The same questions on changed images: blank, shuffled, blurred",
     S + "audit/counts.py": "Counts rows, units and labels by level",
     S + "audit/samples.py": "Variants per sample, missing levels",
     S + "variants/plan.py": "Runs step 3 and writes the variants",
@@ -89,7 +90,7 @@ BANDS = [
          reads=[("file", "experiment.yaml"), ("file", "analysis.yaml"), ("note", "answer lists, if separate"), ("note", "folder of images, for init")],
          writes=[("note", "with init only:"), ("file", "table.csv"), ("file", "experiment.yaml"), ("file", "analysis.yaml")]),
     dict(num="1", title="Data", sub="Make the table safe and link the variants", call="do_import() → build_table()",
-         rows=[S + "data/table.py", S + "data/io.py", S + "data/ids.py", S + "data/checks.py"],
+         rows=[S + "data/table.py", S + "data/io.py", S + "data/ids.py", S + "data/checks.py", S + "data/conditions.py"],
          reads=[("dir", "data: key of experiment.yaml"), ("file", "table.csv or .parquet"), ("dir", "images it names"), ("file", "images/*.png")],
          writes=[("dir", "tables/<t>/"), ("file", "table.parquet"), ("file", "issues.parquet")]),
     dict(num="2", title="Audit", sub="Count what you have, without changing anything", call="do_audit() → run_audit()",
@@ -230,7 +231,7 @@ for path in sorted(on_disk):
                 key = (path, MEMBER.get(target, target))
                 imports[key] = list(dict.fromkeys([*imports.get(key, []), *names]))
 
-cli, orchestrators = S + "cli.py", {band["rows"][0] for band in BANDS} | {S + "inference/check.py"}  # check has its own command
+cli, orchestrators = S + "cli.py", {band["rows"][0] for band in BANDS} | {S + "inference/check.py", S + "data/conditions.py"}  # they have their own command
 spine, branches, arcs = [], [], []
 
 
