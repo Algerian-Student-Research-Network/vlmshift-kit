@@ -245,11 +245,15 @@ EXPLAIN = {
             "run_probes": "Runs the probe for each model and each column.",
         }),
     S + "stats/metrics.py": dict(
-        goal="Defines the base metrics: sensitivity (Sens), specificity (Spec), balanced accuracy (BA), yes rate and INVALID rate, and the answer-change rates. All are ratios of counts. These counts are kept per unit, which makes the bootstrap very fast. A division by zero gives \"not estimable\", never 0.",
+        goal="Defines the base metrics: sensitivity (Sens), specificity (Spec), balanced accuracy (BA), accuracy, F1, macro F1, Matthews correlation (MCC), yes rate and INVALID rate, and the answer-change rates. All are computed from counts. These counts are kept per unit, which makes the bootstrap very fast. A division by zero gives \"not estimable\", never 0.",
         fn={
             "rate": "Divides two numbers, never inventing a 0.",
             "counter": "Prepares a counter of rows per unit.",
             "unit_sums": "Counts, per unit, the right answers and the useful rows.",
+            "f1_of": "Computes the F1 of one class from its hits, its cases and the answers naming it.",
+            "f1": "Computes the F1 of the positive class.",
+            "macro_f1": "Averages the F1 of the two classes, so that both weigh the same.",
+            "mcc": "Computes the Matthews correlation: 0 for a model that always gives the same answer.",
             "weigh": "Adds up these counts according to a draw.",
             "stat_of": "Prepares the computation of a metric or a change rate.",
         }),

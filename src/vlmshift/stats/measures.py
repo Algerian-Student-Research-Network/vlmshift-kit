@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from ..common import Issues, VLMShiftError, to_levels, write_parquet
+from ..common import Issues, code_version, VLMShiftError, to_levels, write_parquet
 from ..config.load import config_hash, load_experiment, run_path, write_yaml
 from ..config.schema import AxisSettings, Measure
 from .bootstrap import draw_weights, summarize
@@ -20,19 +20,23 @@ NOT_PROBED = {"id", "image", "image_hash", "unit", "sample_id", "prompt", "posit
 
 # Each metric is computed twice (section 5.0).
 STATUSES = {"valid": ["valid"], "strict": ["valid", "INVALID"]}
-BASE = {"valid": ["sens", "spec", "ba", "yes_rate"], "strict": ["sens", "spec", "ba", "inv_rate"]}
+QUALITY = ["sens", "spec", "ba", "acc", "f1", "macro_f1", "mcc"]
+BASE = {"valid": [*QUALITY, "yes_rate"], "strict": [*QUALITY, "inv_rate"]}
 CHANGES = {"valid": ["chg", "chg_yes_no", "chg_no_yes"], "strict": ["chg"]}
 # What each number divides by. It rests only on the units that have some of it:
 # a sensitivity rests on the units with a positive case, whatever the size of the cell.
 SUPPORT = {
     "sens": ["pos"], "spec": ["neg"], "ba": ["pos", "neg"], "yes_rate": ["valid"], "inv_rate": ["answered"],
+    "acc": ["known"], "f1": ["pos"], "macro_f1": ["pos", "neg"], "mcc": ["pos", "neg"],
     "chg": ["pairs"], "chg_yes_no": ["pairs"], "chg_no_yes": ["pairs"],
 }
 
 METRIC_COLUMNS = [
     "measure", "model", "split", "level_a", "level_b", "metric", "mode", "value",
     "ci_low", "ci_high", "ci95_low", "ci95_high", "m", "significant",
-    "n_lines", "n_samples", "n_units", "n_valid", "n_invalid", "n_error", "n_excluded",
+    "n_lines", "n_samples", "n_units", "n_images", "n_valid", "n_invalid", "n_error", "n_excluded",
+    # Where the number comes from (section 7.4): what it is averaged over, which analysis, which code.
+    "aggregation", "run", "analysis", "code_version",
 ]
 
 
@@ -52,6 +56,7 @@ def make_rows(stats: dict, used: pd.DataFrame, settings, m: int, is_shift: bool,
     counts = {
         "n_lines": len(used),
         "n_samples": used["sample_id"].nunique(),
+        "n_images": used["image_hash"].nunique() if "image_hash" in used else None,
         "n_valid": int((used["status"] == "valid").sum()),
         "n_invalid": int((used["status"] == "INVALID").sum()),
     }
@@ -127,7 +132,8 @@ def measure_rows(lines, measure, experiment, config, levels: dict, n_cells: int)
 
     rows = []
     for split, cell in cells:
-        labels = {"measure": measure.name, "model": lines["model"].iloc[0], "split": split}
+        labels = {"measure": measure.name, "model": lines["model"].iloc[0], "split": split,
+                  "aggregation": " x ".join(["model", axis, *measure.split_by])}
         for level in levels[axis]:
             rows += base_rows(cell, axis, level, config.stats, labels)
         for a, b in pairs:
@@ -227,7 +233,9 @@ def run_analysis(config) -> Path:
     fingerprint = config_hash(config, run_dir.name)
     folder = run_dir / "analyses" / fingerprint
     write_yaml(config.model_dump(), folder / "analysis.yaml")
-    write_parquet(pd.DataFrame(rows, columns=METRIC_COLUMNS), folder / "metrics.parquet", fingerprint)
+    metrics = pd.DataFrame(rows, columns=METRIC_COLUMNS).assign(
+        run=run_dir.name, analysis=fingerprint, code_version=code_version())
+    write_parquet(metrics, folder / "metrics.parquet", fingerprint)
     write_parquet(probes, folder / "probes.parquet", fingerprint)
     write_parquet(issues.frame(), folder / "issues.parquet", fingerprint)
     return folder

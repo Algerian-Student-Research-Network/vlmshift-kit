@@ -38,6 +38,7 @@ def unit_sums(lines: pd.DataFrame, n_units: int) -> Sums:
         "pos": count(y == 1),
         "tn": count((y == 0) & (yhat == 0)),
         "neg": count(y == 0),
+        "known": count(~np.isnan(y)),
         "yes": count(yhat == 1),
         "valid": count(~np.isnan(yhat)),
         "invalid": count(np.isnan(yhat)),
@@ -45,10 +46,41 @@ def unit_sums(lines: pd.DataFrame, n_units: int) -> Sums:
     }
 
 
+def f1_of(hit, real, said):
+    """F1 of one class: 2·hits / (cases of the class + answers naming it). Without any case: not estimable."""
+    return np.where(real > 0, rate(2 * hit, real + said), np.nan)
+
+
+def f1(s: Sums):
+    """F1 of the positive class. A wrong or unreadable answer on a negative is a false positive."""
+    return f1_of(s["tp"], s["pos"], s["tp"] + s["neg"] - s["tn"])
+
+
+def macro_f1(s: Sums):
+    """Mean of the F1 of the two classes: the two weigh the same, whatever the prevalence."""
+    negative = f1_of(s["tn"], s["neg"], s["tn"] + s["pos"] - s["tp"])
+    return (f1(s) + negative) / 2
+
+
+def mcc(s: Sums):
+    """Matthews correlation. A model that always gives the same answer has 0, as by chance;
+    with only one class in the labels it is not estimable."""
+    tp, tn = s["tp"], s["tn"]
+    fn, fp = s["pos"] - tp, s["neg"] - tn
+    spread = np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+    both = (s["pos"] > 0) & (s["neg"] > 0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return np.where(spread > 0, (tp * tn - fp * fn) / spread, np.where(both, 0.0, np.nan))
+
+
 METRICS = {
     "sens": lambda s: rate(s["tp"], s["pos"]),
     "spec": lambda s: rate(s["tn"], s["neg"]),
     "ba": lambda s: (rate(s["tp"], s["pos"]) + rate(s["tn"], s["neg"])) / 2,
+    "acc": lambda s: rate(s["tp"] + s["tn"], s["known"]),
+    "f1": f1,
+    "macro_f1": macro_f1,
+    "mcc": mcc,
     "yes_rate": lambda s: rate(s["yes"], s["valid"]),
     "inv_rate": lambda s: rate(s["invalid"], s["answered"]),
     # Answer change (section 5.2), on the counts of change_sums. In valid mode, there is no

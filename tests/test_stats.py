@@ -12,7 +12,8 @@ from vlmshift.common import VLMShiftError
 from vlmshift.config.load import load_analysis, read_yaml, write_yaml
 from vlmshift.config.schema import Axis, Stats
 from vlmshift.stats.bootstrap import draw_weights, summarize
-from vlmshift.stats.measures import base_rows, shift_rows
+from vlmshift.stats.measures import base_rows, shift_rows, with_unit_codes
+from vlmshift.stats.metrics import stat_of, unit_sums
 from vlmshift.stats.pairing import pairing_keys, select
 
 SETTINGS = Stats(bootstrap=200, min_units=1)
@@ -376,3 +377,54 @@ def test_a_reference_absent_from_the_data_is_an_error_even_unused(full_run):
 
     with pytest.raises(VLMShiftError, match=r"Axis site: levels missing from the data: \['Z'\]"):
         analyze(full_run.folder, full_run.run, change)
+
+
+# --- Accuracy, F1, macro F1, MCC ---
+
+
+def quality(rows, mode="valid"):
+    used, n_units = with_unit_codes(lines_of(rows))
+    sums = unit_sums(used, n_units)
+    one = np.ones((1, n_units))
+    return {name: float(stat_of(name, sums)(one)[0]) for name in ("acc", "f1", "macro_f1", "mcc")}
+
+
+def test_accuracy_f1_and_mcc_computed_by_hand():
+    """TP 2, FN 1, TN 1, FP 1: accuracy 3/5, F1 2/3, F1 of the negatives 1/2, MCC 1/6."""
+    rows = [("u1", "s1", "EN", "positive", "yes", "valid"), ("u2", "s2", "EN", "positive", "yes", "valid"),
+            ("u3", "s3", "EN", "positive", "no", "valid"), ("u4", "s4", "EN", "negative", "no", "valid"),
+            ("u5", "s5", "EN", "negative", "yes", "valid")]
+    found = quality(rows)
+    assert found["acc"] == pytest.approx(3 / 5)
+    assert found["f1"] == pytest.approx(2 / 3)
+    assert found["macro_f1"] == pytest.approx((2 / 3 + 1 / 2) / 2)
+    assert found["mcc"] == pytest.approx(1 / 6)
+
+
+def test_an_invalid_answer_counts_as_wrong_in_the_quality_metrics():
+    rows = [("u1", "s1", "EN", "positive", "yes", "valid"), ("u2", "s2", "EN", "positive", None, "INVALID"),
+            ("u3", "s3", "EN", "negative", "no", "valid"), ("u4", "s4", "EN", "negative", None, "INVALID")]
+    found = quality(rows)
+    assert found["acc"] == pytest.approx(1 / 2)
+    assert found["f1"] == pytest.approx(2 * 1 / (2 + 2))  # 1 hit, 2 positives, 2 answers counted as yes
+
+
+def test_a_constant_model_has_no_correlation_and_one_class_is_not_estimable():
+    constant = [("u1", "s1", "EN", "positive", "yes", "valid"), ("u2", "s2", "EN", "negative", "yes", "valid")]
+    assert quality(constant)["mcc"] == 0
+    one_class = [("u1", "s1", "EN", "positive", "yes", "valid"), ("u2", "s2", "EN", "positive", "no", "valid")]
+    found = quality(one_class)
+    assert np.isnan(found["mcc"]) and np.isnan(found["macro_f1"])
+    assert found["acc"] == pytest.approx(1 / 2) and found["f1"] == pytest.approx(2 / 3)
+
+
+def test_unknown_labels_stay_out_of_accuracy():
+    rows = [("u1", "s1", "EN", "positive", "yes", "valid"), ("u2", "s2", "EN", "unknown", "no", "valid")]
+    assert quality(rows)["acc"] == 1
+
+
+def test_each_number_says_where_it_comes_from(full_run):
+    metrics = full_run.metrics
+    assert set(metrics["aggregation"]) == {"model x language", "model x site", "model x language x site"}
+    assert metrics["analysis"].eq(full_run.analysis.name).all() and metrics["run"].eq(full_run.run.name).all()
+    assert metrics["code_version"].notna().all() and (metrics["n_images"] > 0).all()

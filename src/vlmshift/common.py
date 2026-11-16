@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import unicodedata
+from importlib import metadata
 from io import StringIO
 from pathlib import Path
 from typing import NamedTuple
@@ -38,6 +39,14 @@ def to_levels(column: pd.Series, observed: bool = True, basis: pd.Series | None 
         names = [f"Q{rank} {interval}" for rank, interval in enumerate(quartiles.cat.categories, 1)]
         levels = quartiles.cat.rename_categories(names).astype(str)
     return levels.where(column.notna(), "(empty)")
+
+
+def code_version() -> str:
+    """The version of the installed package: written next to every number, to know which code gave it."""
+    try:
+        return metadata.version("vlmshift")
+    except metadata.PackageNotFoundError:  # run from the sources, without installing
+        return "unknown"
 
 
 class VLMShiftError(Exception):

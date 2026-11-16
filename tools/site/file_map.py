@@ -44,7 +44,7 @@ ROLES = {
     S + "stats/pairing.py": "Chooses the rows, pairs the samples",
     S + "stats/shifts.py": "Computes the shifts Δ and the answer change",
     S + "stats/probes.py": "Probe: can a column be read in the vectors?",
-    S + "stats/metrics.py": "Sens, Spec, BA, yes rate, INVALID rate, change rates",
+    S + "stats/metrics.py": "Sens, Spec, BA, accuracy, F1, MCC, yes and INVALID rates, changes",
     S + "stats/bootstrap.py": "Draws the units, computes intervals, significance",
     S + "report/export.py": "Writes the tables, the matrices and report.md",
     M + "run.sh": "Runs check, prepare, then paper.py",
