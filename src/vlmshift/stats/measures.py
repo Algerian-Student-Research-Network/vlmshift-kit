@@ -8,13 +8,14 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from ..common import Issues, code_version, VLMShiftError, to_levels, write_parquet
+from ..common import Issues, VLMShiftError, code_version, to_levels, write_parquet
 from ..config.load import config_hash, load_experiment, run_path, write_yaml
 from ..config.schema import AxisSettings, Measure
 from ..tasks.yes_no import negated_rows
+from .analyses import check_analyses, run_analyses
 from .bootstrap import draw_weights, summarize
-from .metrics import Sums, stat_of, unit_sums
-from .pairing import pairing_keys, select
+from .metrics import stat_of, support, unit_sums
+from .pairing import axis_levels, pairing_keys, select, split_cells, with_unit_codes
 from .probes import run_probes
 from .scores import score_shifts, score_stats
 from .shifts import change_sums, delta_of
@@ -26,14 +27,6 @@ STATUSES = {"valid": ["valid"], "strict": ["valid", "INVALID"]}
 QUALITY = ["sens", "spec", "ba", "acc", "f1", "macro_f1", "mcc"]
 BASE = {"valid": [*QUALITY, "yes_rate"], "strict": [*QUALITY, "inv_rate"]}
 CHANGES = {"valid": ["chg", "chg_yes_no", "chg_no_yes"], "strict": ["chg"]}
-# What each number divides by. It rests only on the units that have some of it:
-# a sensitivity rests on the units with a positive case, whatever the size of the cell.
-SUPPORT = {
-    "sens": ["pos"], "spec": ["neg"], "ba": ["pos", "neg"], "yes_rate": ["valid"], "inv_rate": ["answered"],
-    "acc": ["known"], "f1": ["pos"], "macro_f1": ["pos", "neg"], "mcc": ["pos", "neg"],
-    "chg": ["pairs"], "chg_yes_no": ["pairs"], "chg_no_yes": ["pairs"],
-}
-
 METRIC_COLUMNS = [
     "measure", "model", "split", "level_a", "level_b", "metric", "mode", "value",
     "ci_low", "ci_high", "ci95_low", "ci95_high", "m", "significant",
@@ -41,17 +34,6 @@ METRIC_COLUMNS = [
     # Where the number comes from (section 7.4): what it is averaged over, which analysis, which code.
     "aggregation", "run", "analysis", "code_version",
 ]
-
-
-def with_unit_codes(lines: pd.DataFrame) -> tuple[pd.DataFrame, int]:
-    """Number the units from 0 to n − 1."""
-    codes, units = pd.factorize(lines["unit"])
-    return lines.assign(u=codes), len(units)
-
-
-def support(name: str, *sums: Sums) -> int:
-    """Units a number rests on: those with a non-zero denominator, at each level compared."""
-    return min(int((part[key] > 0).sum()) for part in sums for key in SUPPORT[name])
 
 
 def make_rows(stats: dict, used: pd.DataFrame, settings, m: int, is_shift: bool, labels: dict):
@@ -109,18 +91,6 @@ def shift_rows(cell, axis, a, b, keys, settings, m, labels) -> list[dict]:
     return rows
 
 
-def split_cells(lines: pd.DataFrame, split_by: list[str], levels: dict) -> list[tuple]:
-    """Split the rows according to split_by. Return (cell name, rows)."""
-    for axis in split_by:
-        lines = lines[lines[axis].isin(levels[axis])]
-    if not split_by:
-        return [(None, lines)]
-    return [
-        (", ".join(f"{axis}={value}" for axis, value in zip(split_by, values)), cell)
-        for values, cell in lines.groupby(split_by)
-    ]
-
-
 def measure_rows(lines, measure, experiment, config, levels: dict, n_cells: int) -> list[dict]:
     """All the rows of a measure for one model: the matrix cell by cell.
 
@@ -148,23 +118,6 @@ def measure_rows(lines, measure, experiment, config, levels: dict, n_cells: int)
     return rows
 
 
-def axis_levels(variants: pd.DataFrame, config, axes: list[str]) -> dict:
-    """Levels kept for each axis. Check that they were really sent to the models.
-
-    We look at the variants, not the results: an interrupted run keeps all its levels.
-    """
-    levels = {}
-    for axis in axes:
-        present = sorted(variants[axis].dropna().unique())
-        settings = config.axes.get(axis, AxisSettings())
-        wanted = [*(settings.levels or present), *([settings.reference] if settings.reference else [])]
-        absent = sorted(set(wanted) - set(present))
-        if absent:
-            raise VLMShiftError(f"Axis {axis}: levels missing from the data: {absent}")
-        levels[axis] = settings.levels or present
-    return levels
-
-
 def check_rules(config, experiment, measures, variants) -> None:
     """Rules that need the run (section 7.1)."""
     measured = {axis for measure in measures for axis in (measure.compare, *measure.split_by)}
@@ -184,6 +137,7 @@ def check_rules(config, experiment, measures, variants) -> None:
                 f"Measure {measure.name}: the axis {measure.compare} has a single level in the variants "
                 f"{levels}, so there is nothing to compare. Add the rows of the other levels to the table"
             )
+    check_analyses(config, experiment)
     if config.latent:
         if not any(model.embeddings for model in experiment.models):
             raise VLMShiftError("latent block: no model of the run has embeddings: true")
@@ -243,12 +197,16 @@ def run_analysis(config) -> Path:
     elif config.latent:  # partial run: the model that produces vectors has not run yet
         issues.warn("probe_skipped", "Probe not computed: this run does not contain any vectors yet")
 
+    further = run_analyses(config, experiment, lines, variants, probes, issues)
+
     fingerprint = config_hash(config, run_dir.name)
     folder = run_dir / "analyses" / fingerprint
     write_yaml(config.model_dump(), folder / "analysis.yaml")
     metrics = pd.DataFrame(rows, columns=METRIC_COLUMNS).assign(
         run=run_dir.name, analysis=fingerprint, code_version=code_version())
     write_parquet(metrics, folder / "metrics.parquet", fingerprint)
+    stamp = dict(run=run_dir.name, analysis=fingerprint, code_version=code_version())
+    write_parquet(further.assign(**stamp), folder / "analyses.parquet", fingerprint)
     write_parquet(probes, folder / "probes.parquet", fingerprint)
     write_parquet(issues.frame(), folder / "issues.parquet", fingerprint)
     return folder

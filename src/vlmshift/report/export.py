@@ -99,6 +99,8 @@ def load_inputs(analysis_dir: Path) -> SimpleNamespace:
         analysis=analysis_dir.name,
         experiment=load_experiment(run_dir / "experiment.yaml"),
         notice=read_yaml(analysis_dir / "analysis.yaml")["report"]["notice"],
+        alpha=read_yaml(analysis_dir / "analysis.yaml")["stats"]["alpha"],
+        analyses=pd.read_parquet(analysis_dir / "analyses.parquet"),
         table=pd.read_parquet(table_dir / "table.parquet"),
         variants=pd.read_parquet(table_dir / "variants" / log["variants"] / "variants.parquet"),
         results=pd.read_parquet(run_dir / "results.parquet"),
@@ -130,6 +132,8 @@ def build_tables(data: SimpleNamespace) -> dict[str, pd.DataFrame]:
         "reader_validation": data.validation,
         "issues": data.issues,
         **{f"matrix_{name}": matrix(part) for name, part in metrics.groupby("measure")},
+        "analyses": data.analyses,
+        **{f"analysis_{name}": part.dropna(axis=1, how="all") for name, part in data.analyses.groupby("name")},
     }
 
 
@@ -240,6 +244,22 @@ def reading_section(llm, shares: pd.DataFrame, validation: pd.DataFrame) -> list
     ]
 
 
+def analyses_section(analyses: pd.DataFrame, alpha: float) -> list[str]:
+    """One line per further analysis: its file, what it holds, and whether it can be published."""
+    if analyses.empty:
+        return ["No further analysis declared (the `analyses` block of analysis.yaml)."]
+    lines = []
+    for name, part in analyses.groupby("name", sort=False):
+        line = f"- `analysis_{name}.csv`: {part['type'].iloc[0]}, {len(part)} numbers"
+        tested = part[part["statistic"].str.startswith(("mcnemar", "cochran_q")) & part["p_holm"].notna()]
+        if len(tested):
+            line += f", {int((tested['p_holm'] < alpha).sum())} of {len(tested)} tests significant after Holm's correction (p < {alpha})"
+        if part["experimental"].any():
+            line += ". **Experimental**: not yet validated on real runs, not to be published as it is"
+        lines.append(line + ".")
+    return [*lines, "", "All of them are in `analyses.csv`, with the same columns."]
+
+
 def coverage_section(covered: pd.DataFrame, issues: pd.DataFrame) -> list[str]:
     incomplete = (covered["missing"] > 0) | (covered["error"] > 0)  # any level will do: the total is in it too
     warning = ["**Partial coverage**: incomplete run or failures.", ""] if incomplete.any() else []
@@ -263,6 +283,7 @@ def render(data, tables: dict) -> str:
             *[f"- `matrix_{name}.csv`: measure {name}" for name in measures],
             "- `metrics.csv`: all the numbers, with intervals and counts",
         ],
+        "Further analyses": analyses_section(data.analyses, data.alpha),
         "Latent space probe": probe_section(data.probes),
         "Reading the answers": reading_section(
             data.experiment.task.reader_llm, tables["reader_share"], data.validation

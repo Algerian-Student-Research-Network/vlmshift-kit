@@ -217,24 +217,74 @@ EXPLAIN = {
         goal="Fake models whose answers follow a fixed rule, to test the tool with no GPU. The fake generative model answers correctly in English; in French it flips two answers, says \"maybe\" once and fails once. The fake contrastive model encodes the site in its vectors on purpose, so the probe can find it. The fake LLM ignores Hindi, also on purpose."),
 
     S + "stats/measures.py": dict(
-        goal="The conductor of step 5. For each model and each measure, it cuts the data into cells, has the metrics and shifts computed, and gathers everything in metrics.parquet. It first checks the rules that need the run, such as an axis that was never declared.",
+        goal="The conductor of step 5. For each model and each measure, it cuts the data into cells, has the metrics and shifts computed, and gathers everything in metrics.parquet. It first checks the rules that need the run, such as an axis that was never declared. It then has the further analyses computed and writes them next to the metrics.",
         fn={
-            "with_unit_codes": "Numbers the units for the computations.",
             "make_rows": "Turns statistics into rows, with intervals and counts.",
-            "support": "Counts the units that really count in a number: those with something to divide by.",
             "base_rows": "Computes the metrics of one cell.",
             "shift_rows": "Computes the shifts between two levels.",
-            "split_cells": "Cuts along split_by, for example by site.",
             "measure_rows": "Handles one measure for one model.",
-            "axis_levels": "Picks the levels and checks that they exist.",
             "check_rules": "Checks consistency with the run.",
             "run_analysis": "Runs the whole step.",
         }),
     S + "stats/pairing.py": dict(
-        goal="Chooses the rows of each comparison. For a controlled axis, it keeps only the samples present at both levels: the same image in EN and FR, face to face. The samples left out are counted.",
+        goal="Chooses the rows of each comparison. For a controlled axis, it keeps only the samples present at both levels: the same image in EN and FR, face to face. The samples left out are counted. It also picks the levels of each axis, cuts the rows into cells and numbers the units, for the measures and the further analyses alike.",
         fn={
             "pairing_keys": "Says what identifies a pair. Nothing for an observed axis.",
             "select": "Keeps the usable rows and counts the excluded pairs.",
+            "with_unit_codes": "Numbers the units for the computations.",
+            "split_cells": "Cuts along split_by, for example by site.",
+            "axis_levels": "Picks the levels and checks that they exist.",
+        }),
+    S + "stats/analyses.py": dict(
+        goal="The conductor of the further analyses, the analyses block of analysis.yaml. The measures say how much the answers shift between two levels. These analyses answer the questions around that: is the shift significant on paired samples, does it depend on another axis, does the order of the models hold, what happens in the worst group. Each analysis has a type; all of them write rows with the same columns in one table, analyses.parquet. Those not yet validated on real runs are marked experimental.",
+        fn={
+            "axes_of": "Lists every axis an analysis names.",
+            "named": "Reads one key of an analysis as a list of axes.",
+            "check_analyses": "Refuses, before any computation, an unknown axis, an observed axis where pairs are needed, or a missing reference.",
+            "sample_keys": "Says what identifies a sample to pair: its id and the controlled axes not compared.",
+            "within": "Keeps the rows at the levels chosen for each axis.",
+            "corrected": "Applies Holm's correction over all the tests of one kind of one model.",
+            "per_model": "Applies a computation to each cell of each model and labels its rows.",
+            "analysis_rows": "Computes one analysis for every model, according to its type.",
+            "run_analyses": "Computes every analysis of the block and gathers them in one table.",
+        }),
+    S + "stats/paired.py": dict(
+        goal="The paired tests on a controlled axis. The same question is asked at each level, so the answers come in pairs. McNemar's test asks whether a model is right more often at one level than at the other. Cochran's Q asks it over all the levels at once. Holm's correction accounts for the number of tests. The file also gives the smallest difference the test could detect with the pairs at hand. These tests count each pair as independent: with several images per unit, the row says that p is too confident.",
+        fn={
+            "mcnemar": "Tests two paired series: exact below 25 discordant pairs, a corrected chi-square above.",
+            "cochran_q": "Tests three levels or more at once.",
+            "holm": "Corrects a list of p-values for their number.",
+            "detectable": "Gives the smallest difference the test would detect with this many pairs.",
+            "wide": "Puts one sample per row and one level per column.",
+            "pair_rows": "Writes the test, the share of discordant pairs and the detectable difference of one pair of levels.",
+            "paired_tests": "Runs the tests of one model in one cell, on right or wrong and on yes or no.",
+            "level_pairs": "Lists the pairs to compare: against the reference, or every pair.",
+        }),
+    S + "stats/effects.py": dict(
+        goal="The effects that need more than two levels at once. An interaction asks whether the shift on one axis depends on the level of another: site and language, wording and term, or image, language and site. The consistency asks whether a sample keeps its answer at every level. The information measures how much the answer tells about the level. Two grounding analyses use an image control: do two languages disagree more on a degraded image, and is a sample stable because the model reads the image or because it ignores it. Every rate is a mean over samples, recomputed on each draw of units."),
+    S + "stats/robustness.py": dict(
+        goal="How a model holds across groups such as a site, a language or a concept. It compares numbers computed group by group: whether the order of the models changes between two levels, the worst group and the mean of the worst ones, an accuracy where each concept and each label weigh the same, the spread between concepts, and which models are not beaten on mean, worst group and stability together. These numbers describe: they carry no interval, and a group with too few units is left out.",
+        fn={
+            "point": "Computes a metric on the valid answers of some rows.",
+            "group_values": "Computes the metric of each group.",
+            "ranking_rows": "Compares the order of the models between two levels: Kendall's tau, flips, best model.",
+            "worst_group_rows": "Gives the mean, the worst group and the mean of the worst ones.",
+            "standardized_rows": "Gives an accuracy where each concept and each label weigh the same.",
+            "heterogeneity_rows": "Measures how much a metric varies between the levels of an axis.",
+            "stability": "Gives the share of samples that keep their answer at every level.",
+            "pareto_rows": "Finds the models not beaten on mean, worst group and stability together.",
+            "link_rows": "Relates, across models, the probe score to the size of an interaction.",
+        }),
+    S + "stats/regression.py": dict(
+        goal="Two models of whether an answer is right. The regression is logistic, on the levels of some axes and their interaction; the answers of one unit are not independent, so the standard errors are computed by unit. The variance split says how much of the variation goes with each axis once the others are counted. Both are written with numpy alone. A model that cannot be fitted says why and gives no number.",
+        fn={
+            "right_or_wrong": "Keeps the valid answers with a known label and marks them right or wrong.",
+            "dummies": "Turns an axis into 0/1 columns, one per level but the reference.",
+            "design": "Builds the columns of each term: the axes, their interaction, the covariates.",
+            "fit_logistic": "Fits the logistic regression by Newton's method.",
+            "regression_rows": "Gives each coefficient with an interval and a p-value computed by unit.",
+            "residual": "Gives the squared error of a least-squares fit and its rank.",
+            "variance_rows": "Gives the share of variation that goes with each axis.",
         }),
     S + "stats/shifts.py": dict(
         goal="Computes the shift metrics: what changes between two levels. The shift Δ is the metric at level b minus the metric at level a. The answer change is the share of samples whose decision flips, from yes to no or from no to yes.",
@@ -260,6 +310,7 @@ EXPLAIN = {
             "f1": "Computes the F1 of the positive class.",
             "macro_f1": "Averages the F1 of the two classes, so that both weigh the same.",
             "mcc": "Computes the Matthews correlation: 0 for a model that always gives the same answer.",
+            "support": "Counts the units that really count in a number: those with something to divide by.",
             "weigh": "Adds up these counts according to a draw.",
             "stat_of": "Prepares the computation of a metric or a change rate.",
         }),
@@ -278,6 +329,7 @@ EXPLAIN = {
         fn={
             "draw_weights": "Makes the draws: how many times each unit is drawn.",
             "summarize": "Computes the value, the intervals and the significance.",
+            "estimate": "Gives a statistic with its intervals, or not estimable with too few units.",
         }),
 
     S + "report/export.py": dict(
@@ -465,6 +517,7 @@ BLOCKS = {
         items={
             "analysis.yaml (copy)": "The analysis configuration, frozen.",
             "metrics.parquet": "One row per number, with intervals and counts.",
+            "analyses.parquet": "The further analyses: one row per statistic, all with the same columns.",
             "probes.parquet": "The results of the probe.",
             "issues.parquet": "The issues of step 5, such as a model that always gives the same answer.",
         },
@@ -481,7 +534,7 @@ BLOCKS = {
     (6, "writes"): dict(
         goal="The final result, the part you read. Each table exists in CSV and in Parquet.",
         items={
-            "report.md": "The readable report, in six sections, opening on the main shifts in plain sentences.",
+            "report.md": "The readable report, in seven sections, opening on the main shifts in plain sentences.",
             "metrics": "All the numbers, with a column already formatted.",
             "probes": "The results of the probe.",
             "coverage": "Per model: rows planned, valid, INVALID, failed and missing.",
@@ -490,6 +543,7 @@ BLOCKS = {
             "reader_share": "The share of decisions made by the small LLM.",
             "reader_validation": "Its accuracy by language.",
             "matrix_<measure>": "One measure as a cross table, cell by cell.",
+            "analyses, analysis_<name>": "The further analyses: all together, then one file per analysis.",
         },
         cols=[("WRITTEN BY", [(EXPORT, "write_report")])]),
     (7, "reads"): dict(

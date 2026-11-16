@@ -38,3 +38,13 @@ def summarize(stat, weights, alpha: float, m: int, is_shift: bool) -> dict:
         # Significant: the corrected interval does not contain 0. Only concerns shifts.
         "significant": bool(low > 0 or high < 0) if is_shift else None,
     }
+
+
+def estimate(stat, n_units: int, support: int, settings, m: int = 1, is_shift: bool = False) -> dict:
+    """A statistic with its intervals, or not estimable when it rests on too few units.
+
+    n_units: the units numbered in the weights. support: those the statistic really rests on.
+    """
+    enough = support >= max(settings.min_units, 2)  # a single unit cannot be drawn at random
+    weights = draw_weights(n_units, settings.bootstrap, settings.seed) if enough else None
+    return summarize(stat, weights, settings.alpha, m, is_shift)

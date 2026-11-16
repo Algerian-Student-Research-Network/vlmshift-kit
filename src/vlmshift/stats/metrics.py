@@ -91,6 +91,20 @@ METRICS = {
 }
 
 
+# What each number divides by. It rests only on the units that have some of it:
+# a sensitivity rests on the units with a positive case, whatever the size of the cell.
+SUPPORT = {
+    "sens": ["pos"], "spec": ["neg"], "ba": ["pos", "neg"], "yes_rate": ["valid"], "inv_rate": ["answered"],
+    "acc": ["known"], "f1": ["pos"], "macro_f1": ["pos", "neg"], "mcc": ["pos", "neg"],
+    "chg": ["pairs"], "chg_yes_no": ["pairs"], "chg_no_yes": ["pairs"],
+}
+
+
+def support(name: str, *sums: Sums) -> int:
+    """Units a number rests on: those with a non-zero denominator, at each level compared."""
+    return min(int((part[key] > 0).sum()) for part in sums for key in SUPPORT[name])
+
+
 def weigh(sums: Sums, weights: np.ndarray) -> Sums:
     """Sum each count: one value per row of the weight matrix."""
     return {name: weights @ values for name, values in sums.items()}

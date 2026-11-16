@@ -184,6 +184,54 @@ class Measure(Block):
         return self
 
 
+# What each type of analysis needs to be told.
+ANALYSIS_NEEDS = {
+    "tests": ["compare"], "consistency": ["compare"], "information": ["compare"], "ranking": ["compare"],
+    "interaction": ["axes"], "regression": ["axes"], "variance": ["axes"],
+    "disagreement_shift": ["compare", "across"], "taxonomy": ["compare", "across"],
+    "worst_group": ["by"], "standardized": ["by", "over"], "heterogeneity": ["by", "over"],
+    "pareto": ["by", "compare"], "link": ["target", "of"],
+}
+ANALYSIS_METRICS = ("sens", "spec", "ba", "acc", "f1", "macro_f1", "mcc", "yes_rate")
+
+
+class Analysis(Block):
+    """One further analysis (section 5.6). `type` says which one, the other keys what it compares."""
+
+    type: Literal[
+        "tests", "consistency", "information", "ranking", "interaction", "regression", "variance",
+        "disagreement_shift", "taxonomy", "worst_group", "standardized", "heterogeneity", "pareto", "link",
+    ]
+    name: str | None = None          # to tell two analyses of the same type apart
+    compare: str | None = None       # the axis whose levels are compared
+    across: str | None = None        # a second controlled axis: does the comparison change along it?
+    axes: list[str] = []             # the axes of an interaction, a regression or a variance split
+    split_by: list[str] = []         # computed apart in each cell of these axes
+    by: list[str] = []               # the groups of worst_group, standardized, heterogeneity, pareto
+    over: str | None = None          # the axis standardized over, or whose spread is measured
+    covariates: list[str] = []       # regression: axes adjusted for, without interaction
+    metric: Literal[ANALYSIS_METRICS] = "acc"
+    tail: float = Field(0.1, gt=0, le=1)     # worst_group: the share of the worst groups averaged (CVaR)
+    power: float = Field(0.8, gt=0, lt=1)    # tests: the power of the detectable difference
+    target: str | None = None        # link: a target of the latent probe
+    of: str | None = None            # link: the name of an interaction analysis
+
+    @property
+    def label(self) -> str:
+        return self.name or self.type
+
+    @model_validator(mode="after")
+    def has_what_it_needs(self):
+        if missing := [key for key in ANALYSIS_NEEDS[self.type] if not getattr(self, key)]:
+            raise ValueError(f"analysis {self.label}: type {self.type} needs {missing}")
+        if self.type == "interaction" and len(self.axes) not in (2, 3):
+            raise ValueError(f"analysis {self.label}: an interaction is between 2 or 3 axes, not {len(self.axes)}")
+        used = [*self.axes, *self.by, *self.covariates, *[axis for axis in (self.compare, self.across, self.over) if axis]]
+        if repeated := sorted({axis for axis in used if used.count(axis) > 1} | (set(used) & set(self.split_by))):
+            raise ValueError(f"analysis {self.label}: {repeated} is named twice")
+        return self
+
+
 class Stats(Block):
     bootstrap: int = Field(2000, ge=100)
     alpha: float = Field(0.05, gt=0, lt=1)
@@ -207,6 +255,7 @@ class AnalysisConfig(Root):
     measures: list[Measure] | None = None
     stats: Stats = Field(default_factory=Stats)
     latent: Latent | None = None
+    analyses: list[Analysis] = []
     report: Report = Field(default_factory=Report)
 
     @model_validator(mode="after")
@@ -214,6 +263,9 @@ class AnalysisConfig(Root):
         names = [measure.name for measure in self.measures or []]
         if len(names) != len(set(names)):
             raise ValueError("two measures have the same name")
+        labels = [analysis.label for analysis in self.analyses]
+        if repeated := sorted({label for label in labels if labels.count(label) > 1}):
+            raise ValueError(f"two analyses are called {repeated}: give each a name")
         return self
 
 
