@@ -353,6 +353,16 @@ EXPLAIN = {
     S + "report/export.py": dict(
         goal="The conductor of step 6. It reads back the outputs of the previous steps and produces the report: tables in CSV and Parquet, one matrix per measure, and the report.md summary. It redoes no statistics. It only adds the coverage, in total and by level, and the share of decisions made by the small LLM. The summary tells the main shifts in plain sentences, names the levels where most answers cannot be used, and says so when nothing could be tested. A value that cannot be computed shows as \"not estimable\", and a partial run says so at the top."),
 
+    S + "report/figures.py": dict(
+        goal="Draws the figures of the report without any plotting library: a heatmap of balanced accuracy by level, and the shifts of each measure with their corrected intervals. Each figure is written twice, as SVG and as PDF, from the same list of rectangles, lines and texts. Every cell prints its value and its number of units, so the color never carries the meaning alone. A run made with the fake models of the tests is stamped as synthetic on the figure itself."),
+    S + "report/html.py": dict(
+        goal="Writes report.html: the same report as report.md, in one page that opens in any browser. The page holds its style and its figures, and fetches nothing from the network, so it can be read offline and sent as it is. It follows the light or dark setting of the reader and can be used with the keyboard.",
+        fn={
+            "slug": "Turns a section title into the name of a link.",
+            "inline": "Shows bold and code inside a line.",
+            "body_of": "Turns the text of report.md into HTML and lists its sections.",
+            "render_html": "Builds the page: contents, report and figures.",
+        }),
     M + "run.sh": dict(
         goal="Runs the whole Med benchmark with one command: it checks that everything is ready, prepares the 11 sources, then runs paper.py, which runs the models through Core and writes the tables of the paper. It stops at the first error."),
     M + "check.py": dict(
@@ -553,7 +563,9 @@ BLOCKS = {
     (6, "writes"): dict(
         goal="The final result, the part you read. Each table exists in CSV and in Parquet.",
         items={
-            "report.md": "The readable report, in seven sections, opening on the main shifts in plain sentences.",
+            "report.md, report.html": "The readable report, opening on the main shifts in plain sentences. The HTML page also shows the figures.",
+            "provenance.json": "Which run, table, models, code version and files the report comes from.",
+            "fig_<measure>_ba, _shifts": "Two figures per measure, each as SVG and as PDF.",
             "metrics": "All the numbers, with a column already formatted.",
             "probes": "The results of the probe.",
             "coverage": "Per model: rows planned, valid, INVALID, failed and missing.",

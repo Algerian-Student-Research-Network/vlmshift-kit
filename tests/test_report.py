@@ -278,3 +278,81 @@ def test_the_quartiles_of_the_report_are_those_of_the_audit(toy, edit):
     assert len(measured) and set(measured["level_a"]) <= set(audit)
     shares = pd.read_csv(report / "reader_share.csv").query("axis == 'age'")["level"]
     assert len(shares) and set(shares) <= set(audit)
+
+
+# --- Figures, HTML page, provenance ---
+
+
+def test_figures_exist_as_svg_and_pdf_and_print_their_numbers(full_run):
+    for name in ("fig_language_ba", "fig_language_shifts", "fig_site_ba", "fig_language_by_site_ba"):
+        svg = (full_run.report / f"{name}.svg").read_text(encoding="utf-8")
+        assert svg.startswith("<svg") and "n=" in svg  # each number comes with its units
+        assert (full_run.report / f"{name}.pdf").read_bytes().startswith(b"%PDF-1.4")
+    heatmap = (full_run.report / "fig_language_ba.svg").read_text(encoding="utf-8")
+    value = full_run.metrics.query("measure == 'language' and metric == 'ba' and mode == 'valid' and model == 'fake-clean' and level_a == 'EN'")
+    assert f"{value['value'].iloc[0]:.3f}" in heatmap
+
+
+def test_a_run_of_the_fake_models_is_stamped_as_synthetic(full_run):
+    written = (full_run.report / "report.md").read_text(encoding="utf-8")
+    assert "**Synthetic run**" in written and "Research use only" in written
+    assert "SYNTHETIC DATA: NOT FOR PUBLICATION" in (full_run.report / "fig_language_ba.svg").read_text(encoding="utf-8")
+
+
+def test_figures_of_a_real_model_carry_no_stamp(full_run):
+    from vlmshift.report.figures import make_figures
+
+    figures = make_figures(full_run.metrics, synthetic=False)
+    assert all("SYNTHETIC" not in drawing.svg() for drawing in figures.values())
+
+
+def test_the_html_page_holds_the_report_and_its_figures(full_run):
+    page = (full_run.report / "report.html").read_text(encoding="utf-8")
+    assert page.startswith("<!doctype html>") and '<h2 id="summary">Summary</h2>' in page
+    assert page.count("<svg") == len(list(full_run.report.glob("fig_*.svg"))) and '<a href="#figures">Figures</a>' in page
+    assert "http://" not in page.replace("http://www.w3.org/2000/svg", "") and "https://" not in page  # nothing fetched
+
+
+def test_provenance_says_where_the_report_comes_from(full_run):
+    import json
+
+    found = json.loads((full_run.report / "provenance.json").read_text(encoding="utf-8"))
+    assert found["run"] == full_run.run.name and found["analysis"] == full_run.analysis.name
+    assert found["synthetic"] is True and found["code_version"]
+    assert found["axes"]["language"] == {"type": "controlled", "levels": ["EN", "FR"]}
+    assert set(found["models"]) == {"fake-gen", "fake-clean", "fake-clip"} and found["models"]["fake-clean"]["coverage"] == 1
+    assert {"report.md", "report.html", "metrics.csv", "provenance.json", "fig_language_ba.pdf"} <= set(found["files"])
+
+
+def test_the_report_does_not_publish_local_folders(toy, edit):
+    """An image that is missing is reported with its file name, not with the folders of this machine."""
+    from vlmshift.report.export import shareable
+
+    assert shareable(r"Image not found, row excluded: C:\Users\someone\data\img9.png") == "Image not found, row excluded: .../img9.png"
+    assert shareable("Image not found: /home/someone/data/img9.png") == "Image not found: .../img9.png"
+    assert shareable("EN/FR: 3 units") == "EN/FR: 3 units"
+    table = pd.read_csv(toy / "toy.csv")
+    table.loc[0, "image"] = "images/absent.png"
+    table.to_csv(toy / "toy.csv", index=False)
+    run = do_run(load_experiment(toy / "experiment.yaml"))
+    report = do_analyze(load_analysis(toy / "analysis.yaml", str(run)))
+    messages = pd.read_csv(report / "issues.csv")["message"]
+    assert messages.str.contains("absent.png").any() and not messages.str.contains(str(toy.parent), regex=False).any()
+
+
+def test_the_pdf_of_a_figure_is_well_formed(full_run):
+    """Each entry of the cross-reference table points at its object, and the drawing can be read back."""
+    import re
+    import zlib
+
+    data = (full_run.report / "fig_language_ba.pdf").read_bytes()
+    start = int(re.search(rb"startxref\n(\d+)\n%%EOF", data)[1])
+    assert data[start:start + 4] == b"xref"
+    offsets = [int(entry) for entry in re.findall(rb"(\d{10}) 00000 n ", data[start:])]
+    assert len(offsets) == 6
+    for number, offset in enumerate(offsets, 1):
+        assert data[offset:].startswith(b"%d 0 obj" % number)
+    length = int(re.search(rb"/Length (\d+)", data)[1])
+    begin = data.index(b"stream\n") + len(b"stream\n")
+    drawn = zlib.decompress(data[begin:begin + length]).decode("latin-1")
+    assert "(ba by language) Tj" in drawn and "(fake-clean) Tj" in drawn and " re f" in drawn

@@ -1,4 +1,5 @@
-"""Step 6: the report. Tables (CSV and Parquet) and a readable summary (report.md).
+"""Step 6: the report. Tables (CSV and Parquet), figures (SVG and PDF), a readable summary
+(report.md, report.html) and where everything comes from (provenance.json).
 
 Everything is read from the files of the previous steps: no number is recomputed
 in another way, so they stay identical to those of the metrics table.
@@ -6,13 +7,16 @@ in another way, so they stay identical to those of the metrics table.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from types import SimpleNamespace
 
 import pandas as pd
 
-from ..common import MIN_UNITS, join_issues, to_levels, write_csv, write_parquet
+from ..common import MIN_UNITS, code_version, join_issues, to_levels, write_csv, write_parquet
 from ..config.load import load_experiment, read_yaml
+from .figures import make_figures
+from .html import render_html
 
 NOT_ESTIMABLE = "not estimable"
 SHOWN_ISSUES = ["model_pending", "vectors_pending", "model_note", "probe_skipped", "axis_empty"]  # they change how the numbers are read
@@ -20,6 +24,26 @@ LEFT_OUT = ["image_missing", "duplicate_line", "empty_template_value"]  # rows t
 HEADLINES = ["delta_ba", "delta_yes_rate", "chg", "delta_inv_rate"]  # the summary speaks about these
 MOST_FINDINGS = 30  # per model: the others stay in metrics.csv
 FEW_VALID = 0.5  # below this share of valid answers, a level is named in the summary
+RESEARCH_ONLY = (
+    "Research use only. This report describes models on one dataset: it must not be used for diagnosis "
+    "or for any decision about a person."
+)
+SYNTHETIC_RUN = (
+    "**Synthetic run**: it uses the fake models of the tests. Its numbers and figures are not results "
+    "and must not be published."
+)
+# A folder path written in full: it names a machine and often a person. Reports are meant to be shared.
+LOCAL_PATH = re.compile(r"(?:[A-Za-z]:)?[\\/](?:[^\\/\s:*?\"<>|]+[\\/])+")
+
+
+def shareable(text: str) -> str:
+    """The same message, with each local folder path cut down to the name of the file."""
+    return LOCAL_PATH.sub(".../", text) if isinstance(text, str) else text
+
+
+def is_synthetic(experiment) -> bool:
+    """A run is synthetic when one of its models is a fake model of the tests."""
+    return any(model.adapter.startswith("fake_") for model in experiment.models)
 
 
 # --- The tables ---
@@ -132,7 +156,7 @@ def build_tables(data: SimpleNamespace) -> dict[str, pd.DataFrame]:
         "coverage": coverage(data.variants, data.results, models, axes, controlled, data.table),
         "reader_share": reader_share(lines, axes, controlled, data.table),
         "reader_validation": data.validation,
-        "issues": data.issues,
+        "issues": data.issues.assign(message=data.issues["message"].map(shareable)),
         **{f"matrix_{name}": matrix(part) for name, part in metrics.groupby("measure")},
         "analyses": data.analyses,
         **{f"analysis_{name}": part.dropna(axis=1, how="all") for name, part in data.analyses.groupby("name")},
@@ -306,6 +330,7 @@ def render(data, tables: dict) -> str:
         "Results by measure": [
             *[f"- `matrix_{name}.csv`: measure {name}" for name in measures],
             "- `metrics.csv`: all the numbers, with intervals and counts",
+            "- `fig_<measure>_ba` and `fig_<measure>_shifts`, in `.svg` and `.pdf`: one heatmap and the shifts of each measure",
         ],
         "Further analyses": analyses_section(data.analyses, data.alpha),
         "Latent space probe": probe_section(data.probes),
@@ -314,7 +339,9 @@ def render(data, tables: dict) -> str:
         ),
         "Coverage limits": coverage_section(tables["coverage"], data.issues),
     }
-    lines = ["# VLMShift report", "", *([f"> {data.notice}", ""] if data.notice else [])]
+    lines = ["# VLMShift report", "", *([f"> {data.notice}", ""] if data.notice else []), f"> {RESEARCH_ONLY}", ""]
+    if is_synthetic(data.experiment):
+        lines += [f"> {SYNTHETIC_RUN}", ""]
     if data.issues["code"].isin(["model_pending", "vectors_pending"]).any():
         lines += ["> **Partial run**: some models did not finish, see \"Coverage limits\".", ""]
     for title, content in sections.items():
@@ -322,8 +349,28 @@ def render(data, tables: dict) -> str:
     return "\n".join(lines)
 
 
+def provenance(data, tables: dict, files: list[str]) -> dict:
+    """Where the report comes from: enough to say which data, models and code gave each number."""
+    covered = tables["coverage"]
+    total = covered[covered["level"] == "(all)"].set_index("model")
+    axes = {axis: sorted(data.variants[axis].dropna().astype(str).unique()) for axis in data.experiment.axes}
+    return {
+        "run": data.log["run"], "analysis": data.analysis, "table": data.log["table"], "variants": data.log["variants"],
+        "code_version": code_version(), "libraries": data.log.get("libraries", {}),
+        "synthetic": is_synthetic(data.experiment),
+        "models": {name: {key: model.get(key) for key in ("id", "revision", "kind", "adapter", "family", "license", "gpu", "validated")}
+                   | {"coverage": float(total.loc[name, "coverage"]), "valid": int(total.loc[name, "valid"]),
+                      "expected": int(total.loc[name, "expected"])}
+                   for name, model in data.log["models"].items() if name in total.index},
+        "axes": {axis: {"type": data.experiment.axes[axis].type, "levels": levels} for axis, levels in axes.items()},
+        "n_variants": len(data.variants), "n_samples": int(data.variants["sample_id"].nunique()),
+        "n_units": int(data.variants["unit"].nunique()), "n_images": int(data.variants["image_hash"].nunique()),
+        "files": sorted(files),
+    }
+
+
 def write_report(analysis_dir: Path) -> Path:
-    """Write all the report tables and report.md. Return the report folder."""
+    """Write the tables, the figures, report.md, report.html and provenance.json. Return the report folder."""
     data = load_inputs(analysis_dir)
     tables = build_tables(data)
     folder = analysis_dir / "report"
@@ -331,5 +378,15 @@ def write_report(analysis_dir: Path) -> Path:
     for name, table in tables.items():
         write_csv(table, folder / f"{name}.csv")
         write_parquet(table, folder / f"{name}.parquet", analysis_dir.name)
-    (folder / "report.md").write_text(render(data, tables), encoding="utf-8")
+    figures = make_figures(data.metrics, is_synthetic(data.experiment))
+    for name, drawing in figures.items():
+        (folder / f"{name}.svg").write_text(drawing.svg(), encoding="utf-8", newline="\n")
+        (folder / f"{name}.pdf").write_bytes(drawing.pdf())
+    written = render(data, tables)
+    (folder / "report.md").write_text(written, encoding="utf-8")
+    (folder / "report.html").write_text(
+        render_html(written, {name: drawing.svg() for name, drawing in figures.items()}), encoding="utf-8", newline="\n")
+    files = [path.name for path in folder.iterdir()] + ["provenance.json"]
+    (folder / "provenance.json").write_text(
+        json.dumps(provenance(data, tables, files), indent=2, ensure_ascii=False), encoding="utf-8")
     return folder
