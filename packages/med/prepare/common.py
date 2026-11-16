@@ -8,8 +8,9 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 
+from bank import LANGUAGES, load_bank, pair, question
+
 from vlmshift.common import write_parquet
-from vlmshift.config.load import read_yaml
 
 HERE = Path(__file__).parents[1]
 PATIENTS, SEED = 300, 0  # the evaluation core of the paper: 300 patients per source
@@ -100,16 +101,15 @@ def label_rows(images: pd.DataFrame, site: str, labels) -> pd.DataFrame:
 def add_languages(table: pd.DataFrame, bank: dict) -> pd.DataFrame:
     """One row per language. Each language is a variant of the same image and concept (section 3).
 
-    The wording is the same for every concept: only the term changes, so language is the only
-    thing that varies between the rows of one image and one concept.
+    The texts are those of the main experiment of the paper: the canonical question, answered by
+    YES or NO in English, and the canonical pair of sentences for the contrastive models.
     """
     rows = []
     for row in table.to_dict("records"):
-        terms = bank["concepts"][row["concept"]]
-        for language, texts in bank["templates"].items():
-            filled = {key: text.format(term=terms[language]) for key, text in texts.items()}
-            rows.append({**row, "language": language, "question": filled["question"],
-                         "positive_text": filled["positive"], "negative_text": filled["negative"]})
+        for language in LANGUAGES:
+            present, absent = pair(bank, row["concept"], language)
+            rows.append({**row, "language": language, "question": question(bank, row["concept"], language),
+                         "positive_text": present, "negative_text": absent})
     return pd.DataFrame(rows)
 
 
@@ -139,7 +139,7 @@ def write_source(name: str, table: pd.DataFrame, folder: Path = HERE / "data" / 
 
     Only the positives and negatives the source states are kept: unknown is never asked (section 4.2).
     """
-    bank = read_yaml(HERE / "configs" / "questions.yaml")
+    bank = load_bank()
     if unknown := sorted(set(table["concept"]) - set(bank["concepts"])):
         raise LayoutError(f"{name}: concepts missing from configs/questions.yaml: {unknown}")
     output = folder / f"{name}.parquet"

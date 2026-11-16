@@ -1,13 +1,15 @@
-"""Nigeria Chest X-ray: four classes, one folder each. A class is positive for its own concept.
+"""Nigeria Chest X-ray: four classes, one folder each, that exclude each other.
 
-NORMAL is negative for the three. COVID is not stated negative for pneumonia, nor TB for
-COVID-19: an image of one class stays unknown for the concepts of the others (section 4.2).
+The policy of the paper: an image is positive for its class and negative for the two others
+among normal, pneumonia and tuberculosis. COVID-19 is not a concept of the paper: an image of
+that class states nothing here, and stays unknown for the three.
 """
-CONCEPTS = {"COVID": "covid19", "PNEUMONIA": "pneumonia", "TB": "tuberculosis"}
-CLASSES = [*CONCEPTS, "NORMAL"]
+from .template import one_class
+
+CONCEPTS = {"NORMAL": "normal", "PNEUMONIA": "pneumonia", "TB": "tuberculosis", "COVID": None}
+CLASSES = list(CONCEPTS)
+ASKED = [concept for concept in CONCEPTS.values() if concept]
 
 
 def labels(folder: str) -> dict[str, str]:
-    if folder == "NORMAL":
-        return {concept: "negative" for concept in CONCEPTS.values()}
-    return {CONCEPTS[folder]: "positive"}
+    return one_class(CONCEPTS[folder], ASKED)

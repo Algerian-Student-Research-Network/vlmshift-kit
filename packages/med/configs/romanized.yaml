@@ -1,0 +1,148 @@
+# The questions of the paper written in Latin letters, for the script experiment: the same
+# Hindi, Chinese and Arabic sentences as configs/questions.yaml, romanized (IAST-like for Hindi,
+# pinyin for Chinese, a scholarly transliteration for Arabic). The answer is still YES or NO.
+#
+# These are the exact texts sent in the October 2026 supplementary run. Like the terms, they are
+# drafts until someone who reads the language has reviewed them.
+status: needs_validation
+concepts:
+  air_trapping:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā aḥtbās al-hwāʾ fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh aḥtbās al-hwāʾ.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh aḥtbās al-hwāʾ."}
+    HI: {question: "kyā is chātī ke eks-re meṃ eyar ṭraipiṃg ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re eyar ṭraipiṃg dikhātā hai.", negative: "yah chātī kā eks-re eyar ṭraipiṃg nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì qì tǐ zhū liú? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì qì tǐ zhū liú.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì qì tǐ zhū liú."}
+  atelectasis:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā ankhmāṣ al-rʾa fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh ankhmāṣ al-rʾa.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh ankhmāṣ al-rʾa."}
+    HI: {question: "kyā is chātī ke eks-re meṃ eṭalekṭesis ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re eṭalekṭesis dikhātā hai.", negative: "yah chātī kā eks-re eṭalekṭesis nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì fèi bù zhāng? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì fèi bù zhāng.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì fèi bù zhāng."}
+  atherosclerosis:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā tṣlb al-shrāīīn fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh tṣlb al-shrāīīn.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh tṣlb al-shrāīīn."}
+    HI: {question: "kyā is chātī ke eks-re meṃ etherosklerosis ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re etherosklerosis dikhātā hai.", negative: "yah chātī kā eks-re etherosklerosis nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì dòng mài zhōu yàng yìng huà? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì dòng mài zhōu yàng yìng huà.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì dòng mài zhōu yàng yìng huà."}
+  bronchiectasis:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā tūsʿ al-qṣbāt fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh tūsʿ al-qṣbāt.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh tūsʿ al-qṣbāt."}
+    HI: {question: "kyā is chātī ke eks-re meṃ broṃkiekṭesis ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re broṃkiekṭesis dikhātā hai.", negative: "yah chātī kā eks-re broṃkiekṭesis nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì zhī qì guǎn kuò zhāng? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì zhī qì guǎn kuò zhāng.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì zhī qì guǎn kuò zhāng."}
+  cardiomegaly:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā tḍkhm al-qlb fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh tḍkhm al-qlb.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh tḍkhm al-qlb."}
+    HI: {question: "kyā is chātī ke eks-re meṃ kārḍiyomegālī ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re kārḍiyomegālī dikhātā hai.", negative: "yah chātī kā eks-re kārḍiyomegālī nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì xīn zàng zēng dà? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì xīn zàng zēng dà.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì xīn zàng zēng dà."}
+  central_venous_catheter:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā qsṭra wrīdīa mrkzīa fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh qsṭra wrīdīa mrkzīa.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh qsṭra wrīdīa mrkzīa."}
+    HI: {question: "kyā is chātī ke eks-re meṃ keṃdrīy śirāparak kaitheṭar ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re keṃdrīy śirāparak kaitheṭar dikhātā hai.", negative: "yah chātī kā eks-re keṃdrīy śirāparak kaitheṭar nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì zhōng xīn jìng mài dǎo guǎn? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì zhōng xīn jìng mài dǎo guǎn.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì zhōng xīn jìng mài dǎo guǎn."}
+  congestion:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā aḥtqān rʾwī fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh aḥtqān rʾwī.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh aḥtqān rʾwī."}
+    HI: {question: "kyā is chātī ke eks-re meṃ phuphphusīy kaṃjeśan ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re phuphphusīy kaṃjeśan dikhātā hai.", negative: "yah chātī kā eks-re phuphphusīy kaṃjeśan nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì fèi yū xuè? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì fèi yū xuè.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì fèi yū xuè."}
+  consolidation:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā tkthf rʾwī fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh tkthf rʾwī.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh tkthf rʾwī."}
+    HI: {question: "kyā is chātī ke eks-re meṃ phuphphusīy kaṃsoliḍeśan ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re phuphphusīy kaṃsoliḍeśan dikhātā hai.", negative: "yah chātī kā eks-re phuphphusīy kaṃsoliḍeśan nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì fèi shí biàn? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì fèi shí biàn.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì fèi shí biàn."}
+  emphysema:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā nfākh rʾwī fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh nfākh rʾwī.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh nfākh rʾwī."}
+    HI: {question: "kyā is chātī ke eks-re meṃ phuphphusīy emphāyasīmā ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re phuphphusīy emphāyasīmā dikhātā hai.", negative: "yah chātī kā eks-re phuphphusīy emphāyasīmā nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì fèi qì zhǒng? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì fèi qì zhǒng.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì fèi qì zhǒng."}
+  endotracheal_tube:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā anbūb dākhl al-rghāmā fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh anbūb dākhl al-rghāmā.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh anbūb dākhl al-rghāmā."}
+    HI: {question: "kyā is chātī ke eks-re meṃ eṃḍoṭraikiyal ṭyūb ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re eṃḍoṭraikiyal ṭyūb dikhātā hai.", negative: "yah chātī kā eks-re eṃḍoṭraikiyal ṭyūb nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì qì guǎn chā guǎn? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì qì guǎn chā guǎn.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì qì guǎn chā guǎn."}
+  fibrosis:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā tlīf rʾwī fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh tlīf rʾwī.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh tlīf rʾwī."}
+    HI: {question: "kyā is chātī ke eks-re meṃ phuphphusīy phāibrosis ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re phuphphusīy phāibrosis dikhātā hai.", negative: "yah chātī kā eks-re phuphphusīy phāibrosis nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì fèi xiān wéi huà? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì fèi xiān wéi huà.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì fèi xiān wéi huà."}
+  fracture:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā ksr fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh ksr.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh ksr."}
+    HI: {question: "kyā is chātī ke eks-re meṃ phraikcar ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re phraikcar dikhātā hai.", negative: "yah chātī kā eks-re phraikcar nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì gǔ zhé? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì gǔ zhé.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì gǔ zhé."}
+  goiter:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā tḍkhm al-ghda al-drqīa fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh tḍkhm al-ghda al-drqīa.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh tḍkhm al-ghda al-drqīa."}
+    HI: {question: "kyā is chātī ke eks-re meṃ gheṃghā ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re gheṃghā dikhātā hai.", negative: "yah chātī kā eks-re gheṃghā nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì jiǎ zhuàng xiàn zhǒng? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì jiǎ zhuàng xiàn zhǒng.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì jiǎ zhuàng xiàn zhǒng."}
+  granuloma:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā wrm ḥbībī fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh wrm ḥbībī.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh wrm ḥbībī."}
+    HI: {question: "kyā is chātī ke eks-re meṃ grainulomā ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re grainulomā dikhātā hai.", negative: "yah chātī kā eks-re grainulomā nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì ròu yá zhǒng? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì ròu yá zhǒng.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì ròu yá zhǒng."}
+  hamartoma:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā wrm ʿābī fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh wrm ʿābī.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh wrm ʿābī."}
+    HI: {question: "kyā is chātī ke eks-re meṃ haimārṭomā ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re haimārṭomā dikhātā hai.", negative: "yah chātī kā eks-re haimārṭomā nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì cuò gòu liú? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì cuò gòu liú.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì cuò gòu liú."}
+  hiatal_hernia:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā ftq ḥjābī fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh ftq ḥjābī.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh ftq ḥjābī."}
+    HI: {question: "kyā is chātī ke eks-re meṃ hāyaṭal harniyā ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re hāyaṭal harniyā dikhātā hai.", negative: "yah chātī kā eks-re hāyaṭal harniyā nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì shí guǎn liè kǒng shàn? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì shí guǎn liè kǒng shàn.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì shí guǎn liè kǒng shàn."}
+  infiltrate:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā artshāḥ rʾwī fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh artshāḥ rʾwī.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh artshāḥ rʾwī."}
+    HI: {question: "kyā is chātī ke eks-re meṃ phuphphusīy inphilṭreṭ ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re phuphphusīy inphilṭreṭ dikhātā hai.", negative: "yah chātī kā eks-re phuphphusīy inphilṭreṭ nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì fèi jìn rùn? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì fèi jìn rùn.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì fèi jìn rùn."}
+  interstitial_lung_disease:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā mrḍ rʾwī khlālī fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh mrḍ rʾwī khlālī.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh mrḍ rʾwī khlālī."}
+    HI: {question: "kyā is chātī ke eks-re meṃ aṃtarālīy phephar̤oṃ kā rog ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re aṃtarālīy phephar̤oṃ kā rog dikhātā hai.", negative: "yah chātī kā eks-re aṃtarālīy phephar̤oṃ kā rog nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì jiān zhì xìng fèi bìng? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì jiān zhì xìng fèi bìng.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì jiān zhì xìng fèi bìng."}
+  lung_cancer:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā srṭān al-rʾa fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh srṭān al-rʾa.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh srṭān al-rʾa."}
+    HI: {question: "kyā is chātī ke eks-re meṃ phephar̤oṃ kā kaiṃsar ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re phephar̤oṃ kā kaiṃsar dikhātā hai.", negative: "yah chātī kā eks-re phephar̤oṃ kā kaiṃsar nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì fèi ái? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì fèi ái.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì fèi ái."}
+  mass:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā ktla rʾwīa fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh ktla rʾwīa.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh ktla rʾwīa."}
+    HI: {question: "kyā is chātī ke eks-re meṃ phuphphusīy dravyamān ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re phuphphusīy dravyamān dikhātā hai.", negative: "yah chātī kā eks-re phuphphusīy dravyamān nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì fèi bù zhǒng kuài? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì fèi bù zhǒng kuài.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì fèi bù zhǒng kuài."}
+  nasogastric_tube:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā anbūb anfī mʿdī fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh anbūb anfī mʿdī.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh anbūb anfī mʿdī."}
+    HI: {question: "kyā is chātī ke eks-re meṃ nāsogaisṭrik ṭyūb ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re nāsogaisṭrik ṭyūb dikhātā hai.", negative: "yah chātī kā eks-re nāsogaisṭrik ṭyūb nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì bí wèi guǎn? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì bí wèi guǎn.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì bí wèi guǎn."}
+  nodule:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā ʿqīda rʾwīa fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh ʿqīda rʾwīa.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh ʿqīda rʾwīa."}
+    HI: {question: "kyā is chātī ke eks-re meṃ phuphphusīy noḍyūl ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re phuphphusīy noḍyūl dikhātā hai.", negative: "yah chātī kā eks-re phuphphusīy noḍyūl nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì fèi jié jié? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì fèi jié jié.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì fèi jié jié."}
+  normal:
+    AR: {question: "hl ṣūra al-ashʿa al-sīnīa llṣdr hdhh ṭbīʿīa? ajb fqṭ b YES aw NO.", positive: "ṣūra al-ashʿa al-sīnīa llṣdr hdhh ṭbīʿīa.", negative: "ṣūra al-ashʿa al-sīnīa llṣdr hdhh ghīr ṭbīʿīa."}
+    HI: {question: "kyā yah chātī kā eks-re sāmāny hai? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re sāmāny hai.", negative: "yah chātī kā eks-re asāmāny hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu zhèng cháng? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn zhèng cháng.", negative: "zhè zhāng xiōng bù X guāng piàn yì cháng."}
+  opacity:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā ʿtāma rʾwīa fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh ʿtāma rʾwīa.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh ʿtāma rʾwīa."}
+    HI: {question: "kyā is chātī ke eks-re meṃ phuphphusīy apāradarśitā ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re phuphphusīy apāradarśitā dikhātā hai.", negative: "yah chātī kā eks-re phuphphusīy apāradarśitā nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì fèi bù bú tòu míng yǐng? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì fèi bù bú tòu míng yǐng.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì fèi bù bú tòu míng yǐng."}
+  osteopenia:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā nqṣ kthāfa al-ʿẓām fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh nqṣ kthāfa al-ʿẓām.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh nqṣ kthāfa al-ʿẓām."}
+    HI: {question: "kyā is chātī ke eks-re meṃ ऑsṭiyopīniyā ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re ऑsṭiyopīniyā dikhātā hai.", negative: "yah chātī kā eks-re ऑsṭiyopīniyā nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì gǔ zhì jiǎn shǎo? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì gǔ zhì jiǎn shǎo.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì gǔ zhì jiǎn shǎo."}
+  pacemaker:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā nāẓma qlbīa fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh nāẓma qlbīa.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh nāẓma qlbīa."}
+    HI: {question: "kyā is chātī ke eks-re meṃ pesamekar ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re pesamekar dikhātā hai.", negative: "yah chātī kā eks-re pesamekar nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì xīn zàng qǐ bó qì? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì xīn zàng qǐ bó qì.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì xīn zàng qǐ bó qì."}
+  pleural_effusion:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā anṣbāb jnbī fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh anṣbāb jnbī.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh anṣbāb jnbī."}
+    HI: {question: "kyā is chātī ke eks-re meṃ plūral iphyūjan ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re plūral iphyūjan dikhātā hai.", negative: "yah chātī kā eks-re plūral iphyūjan nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì xiōng qiāng jī yè? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì xiōng qiāng jī yè.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì xiōng qiāng jī yè."}
+  pleural_plaque:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā lwīḥa jnbīa fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh lwīḥa jnbīa.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh lwīḥa jnbīa."}
+    HI: {question: "kyā is chātī ke eks-re meṃ plūral plāk ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re plūral plāk dikhātā hai.", negative: "yah chātī kā eks-re plūral plāk nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì xiōng mó bān? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì xiōng mó bān.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì xiōng mó bān."}
+  pneumonia:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā al-thāb rʾwī fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh al-thāb rʾwī.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh al-thāb rʾwī."}
+    HI: {question: "kyā is chātī ke eks-re meṃ nimoniyā ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re nimoniyā dikhātā hai.", negative: "yah chātī kā eks-re nimoniyā nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì fèi yán? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì fèi yán.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì fèi yán."}
+  pneumothorax:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā astrwāḥ al-ṣdr fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh astrwāḥ al-ṣdr.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh astrwāḥ al-ṣdr."}
+    HI: {question: "kyā is chātī ke eks-re meṃ nyūmothoraiks ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re nyūmothoraiks dikhātā hai.", negative: "yah chātī kā eks-re nyūmothoraiks nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì qì xiōng? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì qì xiōng.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì qì xiōng."}
+  pulmonary_edema:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā wdhma rʾwīa fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh wdhma rʾwīa.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh wdhma rʾwīa."}
+    HI: {question: "kyā is chātī ke eks-re meṃ phuphphusīy eḍimā ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re phuphphusīy eḍimā dikhātā hai.", negative: "yah chātī kā eks-re phuphphusīy eḍimā nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì fèi shuǐ zhǒng? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì fèi shuǐ zhǒng.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì fèi shuǐ zhǒng."}
+  scoliosis:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā jnf fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh jnf.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh jnf."}
+    HI: {question: "kyā is chātī ke eks-re meṃ skoliyosis ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re skoliyosis dikhātā hai.", negative: "yah chātī kā eks-re skoliyosis nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì jí zhù cè wān? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì jí zhù cè wān.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì jí zhù cè wān."}
+  spondylosis_deformans:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā dāʾ al-fqār al-tshūhī fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh dāʾ al-fqār al-tshūhī.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh dāʾ al-fqār al-tshūhī."}
+    HI: {question: "kyā is chātī ke eks-re meṃ spaॉnḍilozis ḍiphaॉrmans ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re spaॉnḍilozis ḍiphaॉrmans dikhātā hai.", negative: "yah chātī kā eks-re spaॉnḍilozis ḍiphaॉrmans nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì biàn xíng xìng jǐ zhuī bìng? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì biàn xíng xìng jǐ zhuī bìng.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì biàn xíng xìng jǐ zhuī bìng."}
+  swan-ganz_catheter:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā qsṭra swān-ghānz fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh qsṭra swān-ghānz.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh qsṭra swān-ghānz."}
+    HI: {question: "kyā is chātī ke eks-re meṃ svān-gāṃz kaitheṭar ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re svān-gāṃz kaitheṭar dikhātā hai.", negative: "yah chātī kā eks-re svān-gāṃz kaitheṭar nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì Swan-Ganz dǎo guǎn? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì Swan-Ganz dǎo guǎn.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì Swan-Ganz dǎo guǎn."}
+  tuberculosis:
+    AR: {question: "hl tūjd ʿlāmāt tdl ʿlā al-sl fī ṣūra al-ashʿa al-sīnīa llṣdr hdhh? ajb fqṭ b YES aw NO.", positive: "tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh al-sl.", negative: "lā tuẓhr ṣūra al-ashʿa al-sīnīa llṣdr hdhh al-sl."}
+    HI: {question: "kyā is chātī ke eks-re meṃ tapedik ke saṃket haiṃ? keval YES yā NO meṃ uttar deṃ.", positive: "yah chātī kā eks-re tapedik dikhātā hai.", negative: "yah chātī kā eks-re tapedik nahīṃ dikhātā hai."}
+    ZH: {question: "zhè zhāng xiōng bù X guāng piàn shì fǒu xiǎn shì jié hé bìng? zhǐ huí dá YES huò NO.", positive: "zhè zhāng xiōng bù X guāng piàn xiǎn shì jié hé bìng.", negative: "zhè zhāng xiōng bù X guāng piàn wèi xiǎn shì jié hé bìng."}

@@ -394,16 +394,32 @@ EXPLAIN = {
             "votes": "RICORD only: the classes the radiologists gave to each study, from the MD.ai export.",
         }),
     M + "label_rules/<source>.py": dict(
-        goal="Each source codes its labels in its own way: a column of findings, one column per device, the folder of an image, the end of its name, the vote of several radiologists. Each rule turns that code into positive, negative or unknown, concept by concept. Only what the source states becomes a negative: a finding that is not mentioned stays unknown, and unknown is never asked.",
+        goal="Each source codes its labels in its own way: a column of findings, one column per device, the folder of an image, the end of its name, the vote of several radiologists. Each rule turns that code into positive, negative or unknown, concept by concept. The concepts are those of the paper, and each rule follows the label policy the paper gives to its source: classes that exclude each other give a negative for the other classes, the 14 findings of NIH are read as exhaustive, a source that only shows positives gives no negative. What a source does not state stays unknown, and unknown is never asked.",
         fn={"labels": "Gives the label of each concept the source states, for one image."}),
     M + "prepare/template.py": dict(
         goal="The script to copy for a new source. It reads a raw file and turns it into the table every source gives, with its card. It is not a source: python -m prepare skips it.",
         fn={"prepare": "Reads the raw file and builds the table."}),
     M + "label_rules/template.py": dict(
-        goal="The label rule to copy for a new source. Doubt and empty values become unknown, never negative.",
-        fn={"to_label": "Translates a raw value into a label."}),
+        goal="The label rule to copy for a new source. Doubt and empty values become unknown, never negative. It also holds the rule shared by the sources whose classes exclude each other, such as normal or tuberculosis.",
+        fn={
+            "to_label": "Translates a raw value into a label.",
+            "one_class": "For classes that exclude each other: positive for the class of the image, negative for the others.",
+        }),
     M + "prepare/common.py": dict(
         goal="The tools shared by the sources. It finds the images of a source wherever its archive put them, extracts a zip once, and turns DICOM images into PNG. It then keeps the positives and negatives, draws 300 patients per source with one image each, half of them ill when there are enough, adds one row per language with the texts of questions.yaml, and writes the table in the format Core expects."),
+    M + "bank.py": dict(
+        goal="The concept bank of the paper. Every text sent to a model comes from here: the 35 concepts in 7 languages and the wordings of configs/questions.yaml, and the Hindi, Chinese and Arabic questions in Latin letters of configs/romanized.yaml. None of it is reconstructed: a test rebuilds the prompts of the October 2026 runs from these files. The module also guards a rule of the design: while a term has not been reviewed by a clinician, an official run is refused, and a run asked for anyway says in its report that its terms are drafts.",
+        fn={
+            "load_bank": "Reads configs/questions.yaml.",
+            "load_romanized": "Reads configs/romanized.yaml.",
+            "question": "Writes the question about a concept in a language, a wording and an answer format.",
+            "pair": "Writes the two sentences a contrastive model compares, turned around for a negated question.",
+            "romanized": "Gives the question and the pair of a concept in Latin letters.",
+            "answer_sets": "Gives the answers accepted for each answer format.",
+            "unvalidated": "Lists the concepts whose terms no clinician has reviewed.",
+            "draft_notice": "Writes what a report must say while some terms are drafts.",
+            "gate": "Refuses a run on draft terms unless it was asked for.",
+        }),
     M + "paper.py": dict(
         goal="Runs the models through Core, then writes the tables of the paper from the run. A cell is a source and a concept. Only the cells where every model has an answer in every language are kept: the complete-case rule. An unreadable answer counts as wrong. The gap of each language with English comes with a 95% interval from 10,000 paired draws of model and cell pairs.",
         fn={
@@ -582,7 +598,7 @@ BLOCKS = {
         items={
             "<source>/": "The raw files of a source, as it gives them: a label file, folders of images, or archives kept as they are.",
             "converted/": "The DICOM images of RICORD and JSRT, written once as PNG.",
-            "questions.yaml": "The 35 concepts in 7 languages, with their RadLex identifier, and one wording per language.",
+            "questions.yaml, romanized.yaml": "The 35 concepts of the paper in 7 languages, with their RadLex identifier, their validation status and every wording; and the questions in Latin letters.",
             "experiment.yaml, analysis.yaml": "The configurations of the benchmark: 11 tables, 10 models, English as reference.",
         },
         cols=[("READ BY", [(M + "prepare/<source>.py", "RAW"), (M + "prepare/common.py", "questions.yaml"), (M + "check.py", "experiment.yaml")])]),

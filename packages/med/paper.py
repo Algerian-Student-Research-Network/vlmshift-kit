@@ -3,6 +3,11 @@
 Usage, from packages/med:
     python paper.py configs/experiment.yaml configs/analysis.yaml   run, VLMShift report, then the tables
     python paper.py --run <run folder>                               the tables again, without any model
+    python paper.py ... --allow-unvalidated                          run although some terms are still drafts
+
+An official run needs validated terms: while a concept of configs/questions.yaml says
+needs_validation, the run is refused. With --allow-unvalidated it goes on, and its report says
+at the top that the terms are drafts.
 
 Rules of the paper (sections 3 and 4.2):
 - a cell is a (source, concept) pair. A cell is kept only if every model has an answer there in
@@ -140,6 +145,8 @@ def write_tables(run: Path) -> Path:
 def main(argv: list[str]) -> None:
     from vlmshift.common import VLMShiftError
 
+    allowed = "--allow-unvalidated" in argv
+    argv = [word for word in argv if word != "--allow-unvalidated"]
     try:
         if argv[0] == "--run":
             run = Path(argv[1])
@@ -148,8 +155,14 @@ def main(argv: list[str]) -> None:
             from vlmshift.cli import do_analyze, do_run
             from vlmshift.config.load import load_analysis, load_experiment
 
+            from bank import gate
+
+            notice = gate(allowed)
             run = do_run(load_experiment(argv[0]))
-            do_analyze(load_analysis(argv[1], str(run)))
+            analysis = load_analysis(argv[1], str(run))
+            if notice:
+                analysis.report.notice = " ".join(filter(None, [notice, analysis.report.notice]))
+            do_analyze(analysis)
         print(f"Paper tables -> {write_tables(run)}")
     except VLMShiftError as error:
         sys.exit(f"Error: {error}")

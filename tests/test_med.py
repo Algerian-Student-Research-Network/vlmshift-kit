@@ -23,6 +23,7 @@ MED = ROOT / "packages" / "med"
 sys.path.insert(0, str(MED))
 
 import adapters  # noqa: E402,F401  (registers chexzero and open_clip)
+import bank as med_bank  # noqa: E402
 import check  # noqa: E402
 import cite  # noqa: E402
 import paper  # noqa: E402
@@ -31,11 +32,11 @@ from label_rules import nih as nih_rule  # noqa: E402
 from label_rules import padchest_gr as padchest_rule  # noqa: E402
 from label_rules import ranzcr as ranzcr_rule  # noqa: E402
 from label_rules import ricord as ricord_rule  # noqa: E402
-from label_rules.template import to_label  # noqa: E402
+from label_rules.template import one_class, to_label  # noqa: E402
 from prepare import card_problems, common, folder_of, name_of, sources, template  # noqa: E402
 
 BANK = read_yaml(MED / "configs" / "questions.yaml")
-LANGUAGES = ["EN", "FR", "ES", "DE", "AR", "HI", "ZH"]
+LANGUAGES = ["EN", "FR", "ES", "HI", "ZH", "AR", "DE"]
 
 
 def image(path, size=(8, 8)):
@@ -226,15 +227,17 @@ def labels_of(table):
             table[["patient", "concept", "label"]].itertuples(index=False)}
 
 
-def test_nih_keeps_the_patient_and_reads_no_finding_as_negative(med_data):
+def test_nih_keeps_the_patient_and_reads_no_finding_as_normal(med_data):
     from prepare import nih
 
     raw_nih(med_data)
     table = nih.prepare(med_data)
     assert table.groupby("image")["patient"].first().tolist() == ["NIH_1", "NIH_1", "NIH_2"]
     one = table[table["image"].str.endswith("00000001_000.png")].set_index("concept")["label"]
-    assert one["cardiomegaly"] == one["effusion"] == "positive" and one["nodule"] == "unknown"
-    assert table[table["patient"] == "NIH_2"]["label"].eq("negative").all()
+    assert one["cardiomegaly"] == one["pleural_effusion"] == "positive"
+    assert one["nodule"] == one["normal"] == "negative"  # the paper reads the 14 findings as exhaustive
+    healthy = table[table["patient"] == "NIH_2"].set_index("concept")["label"]
+    assert healthy["normal"] == "positive" and healthy.drop("normal").eq("negative").all()
 
 
 def test_nih_stops_when_an_image_is_missing(med_data):
@@ -260,9 +263,11 @@ def test_padchest_reads_positive_negative_and_normal_reports(med_data):
 
     raw_padchest_gr(med_data)
     found = labels_of(padchest_gr.prepare(med_data))
-    assert found[("7", "cardiomegaly")] == "positive" and found[("7", "effusion")] == "negative"
-    assert ("7", "scoliosis") not in found  # not stated in an abnormal report: unknown, so absent
+    assert found[("7", "cardiomegaly")] == "positive" and found[("7", "normal")] == "negative"
+    # In an abnormal report, a finding that is not reported, or only denied, is unknown: so absent.
+    assert ("7", "scoliosis") not in found and ("7", "pleural_effusion") not in found
     assert found[("8", "scoliosis")] == found[("8", "cardiomegaly")] == "negative"  # a normal study
+    assert found[("8", "normal")] == "positive"
 
 
 def test_padchest_says_which_columns_it_found(med_data):
@@ -279,9 +284,11 @@ def test_sources_without_patient_number_use_one_patient_per_image(med_data):
 
     raw_pneumonia_bangladesh(med_data)
     table = pneumonia_bangladesh.prepare(med_data)
-    assert table["patient"].nunique() == len(table) == 2
-    assert dict(zip(table["patient"].str.rsplit("/", n=1).str[1], table["label"])) == {
+    assert table["patient"].nunique() == 2 and len(table) == 4  # two images, asked about pneumonia and normal
+    asked = table[table["concept"] == "pneumonia"]
+    assert dict(zip(asked["patient"].str.rsplit("/", n=1).str[1], asked["label"])) == {
         "pneumonia-1.jpg": "positive", "normal-1.jpg": "negative"}
+    assert set(table.loc[table["concept"] == "normal", "label"]) == {"positive", "negative"}
 
 
 def test_an_archive_is_extracted_once(med_data):
@@ -309,7 +316,8 @@ def test_nlm_sets_read_the_class_at_the_end_of_the_name_and_skip_the_masks(med_d
     raw_shenzhen(med_data)
     raw_montgomery(med_data)
     assert labels_of(shenzhen.prepare(med_data)) == {
-        ("CHNCXR_0001_0.png", "tuberculosis"): "negative", ("CHNCXR_0327_1.png", "tuberculosis"): "positive"}
+        ("CHNCXR_0001_0.png", "tuberculosis"): "negative", ("CHNCXR_0327_1.png", "tuberculosis"): "positive",
+        ("CHNCXR_0001_0.png", "normal"): "positive", ("CHNCXR_0327_1.png", "normal"): "negative"}
     assert labels_of(montgomery.prepare(med_data))[("MCUCXR_0104_1.png", "tuberculosis")] == "positive"
 
 
@@ -333,7 +341,7 @@ def test_ricord_takes_the_majority_and_converts_the_dicom(med_data):
 
     raw_ricord(med_data)
     table = ricord.prepare(med_data)
-    assert labels_of(table) == {("p1", "covid19"): "positive", ("p2", "covid19"): "negative"}  # s3 is a tie
+    assert labels_of(table) == {("p1", "opacity"): "positive", ("p2", "opacity"): "negative"}  # s3 is a tie
     pixels = np.asarray(Image.open(table["image"].iloc[0]))
     assert pixels.shape == (4, 4) and pixels[0, 0] == 255 and pixels[-1, -1] == 0  # MONOCHROME1 turned around
 
@@ -344,48 +352,101 @@ def test_label_rule_never_turns_doubt_into_negative():
     assert [to_label(value) for value in ("1", "0", "-1", "")] == ["positive", "negative", "unknown", "unknown"]
 
 
-def test_nih_rule_does_not_read_absence_as_negative():
-    assert nih_rule.labels("Mass")["mass"] == "positive" and nih_rule.labels("Mass")["hernia"] == "unknown"
-    assert set(nih_rule.labels("No Finding").values()) == {"negative"}
+def test_nih_rule_follows_the_exhaustive_policy_of_the_paper():
+    found = nih_rule.labels("Mass|Pleural_Thickening")
+    assert found["mass"] == found["pleural_plaque"] == "positive"
+    assert found["hiatal_hernia"] == found["normal"] == "negative"
+    healthy = nih_rule.labels("No Finding")
+    assert healthy.pop("normal") == "positive" and set(healthy.values()) == {"negative"}
 
 
-def test_nigeria_rule_leaves_the_other_classes_unknown():
-    assert nigeria_rule.labels("COVID") == {"covid19": "positive"}
-    assert nigeria_rule.labels("NORMAL") == {"covid19": "negative", "pneumonia": "negative", "tuberculosis": "negative"}
+def test_a_class_outside_the_paper_states_nothing():
+    """Classes that exclude each other give negatives; a class the paper does not ask stays unknown."""
+    assert one_class("pneumonia", ["normal", "pneumonia"]) == {"normal": "negative", "pneumonia": "positive"}
+    assert nigeria_rule.labels("COVID") == {"normal": "unknown", "pneumonia": "unknown", "tuberculosis": "unknown"}
+    assert nigeria_rule.labels("NORMAL") == {"normal": "positive", "pneumonia": "negative", "tuberculosis": "negative"}
+    assert nigeria_rule.labels("TB") == {"normal": "negative", "pneumonia": "negative", "tuberculosis": "positive"}
 
 
 def test_ricord_rule_majority_tie_and_invalid():
-    assert ricord_rule.labels(["Typical Appearance", "Typical Appearance", "Atypical Appearance"]) == {"covid19": "positive"}
-    assert ricord_rule.labels(["Typical Appearance", "Negative for Pneumonia"]) == {"covid19": "unknown"}
-    assert ricord_rule.labels(["Invalid Study"]) == {"covid19": "unknown"}
-    assert ricord_rule.labels(["Mild Opacities"]) == {"covid19": "unknown"}
+    """Typical, indeterminate and atypical all describe lung opacities, the concept the paper asks."""
+    assert ricord_rule.labels(["Typical Appearance", "Indeterminate Appearance", "Negative for Pneumonia"]) == {"opacity": "positive"}
+    assert ricord_rule.labels(["Negative for Pneumonia", "Negative for Pneumonia", "Atypical Appearance"]) == {"opacity": "negative"}
+    assert ricord_rule.labels(["Typical Appearance", "Negative for Pneumonia"]) == {"opacity": "unknown"}
+    assert ricord_rule.labels(["Invalid Study"]) == {"opacity": "unknown"}
+    assert ricord_rule.labels(["Mild Opacities"]) == {"opacity": "unknown"}
 
 
-def test_padchest_rule_positive_wins_over_negative():
-    findings = [{"abnormal": False, "labels": ["Pleural Effusion"]}, {"abnormal": True, "labels": ["pleural effusion"]}]
-    assert padchest_rule.labels(findings) == {"effusion": "positive"}
+def test_padchest_rule_maps_its_labels_to_the_concepts_of_the_paper():
+    findings = [{"abnormal": False, "labels": ["Pleural Effusion"]},
+                {"abnormal": True, "labels": ["alveolar pattern", "Vascular hilar enlargement", "aortic elongation"]}]
+    # A denied finding and a label outside the paper are not asked; an abnormal study is not normal.
+    assert padchest_rule.labels(findings) == {"consolidation": "positive", "congestion": "positive", "normal": "negative"}
+    normal = padchest_rule.labels([{"abnormal": False, "labels": ["normal"]}])
+    assert normal.pop("normal") == "positive" and set(normal.values()) == {"negative"} and len(normal) == 21
 
 
 # --- concept bank ---------------------------------------------------------------------------------------------
 
 def test_the_bank_has_35_concepts_in_7_languages():
-    assert len(BANK["concepts"]) == 35
-    assert list(BANK["templates"]) == LANGUAGES
+    assert len(BANK["concepts"]) == 35 and "normal" in BANK["concepts"]
+    assert list(BANK["templates"]) == LANGUAGES == list(med_bank.LANGUAGES) == list(BANK["answers"])
     for concept, terms in BANK["concepts"].items():
-        assert sorted(set(terms) - {"radlex"}) == sorted(LANGUAGES), concept
+        assert sorted(set(terms) - {"radlex", "status", "reviewed"}) == sorted(LANGUAGES), concept
         assert all(str(terms[language]).strip() for language in LANGUAGES), concept
+        assert terms["status"] in ("needs_validation", "validated"), concept
 
 
-def test_every_template_holds_the_term_and_asks_for_an_english_answer():
+def test_every_wording_holds_the_term_and_every_format_says_how_to_answer():
     for language, texts in BANK["templates"].items():
-        assert sorted(texts) == ["negative", "positive", "question"], language
-        assert all("{term}" in text for text in texts.values()), language
-        assert "YES" in texts["question"] and "NO" in texts["question"], language
+        assert sorted(texts) == sorted([*med_bank.VARIANTS, "canonical_pair", "paraphrase_1_pair", "paraphrase_2_pair", "normal"])
+        assert all("{term}" in texts[variant] for variant in med_bank.VARIANTS), language
+        assert all("{term}" in text for name in texts if name.endswith("_pair") for text in texts[name]), language
+        assert sorted(BANK["answers"][language]) == sorted(med_bank.FORMATS), language
+        assert "YES" in BANK["answers"][language]["english_yes_no"] and "NO" in BANK["answers"][language]["english_yes_no"]
+        assert "1" in BANK["answers"][language]["numeric_10"] and "A" in BANK["answers"][language]["label_ab"]
+
+
+def test_the_questions_are_those_of_the_paper():
+    """Texts as they were sent in the October 2026 runs."""
+    assert med_bank.question(BANK, "granuloma", "EN") == "Is there evidence of a granuloma in this chest X-ray? Answer only YES or NO."
+    assert med_bank.question(BANK, "normal", "FR") == "Cette radiographie thoracique est-elle normale ? Répondez uniquement par YES ou NO."
+    assert med_bank.question(BANK, "normal", "EN", "negated", "numeric_10") == "Is this chest X-ray abnormal? Answer only 1 for yes or 0 for no."
+    assert med_bank.question(BANK, "central_venous_catheter", "FR", answer_format="numeric_10", term_language="EN") == (
+        "Y a-t-il des signes de a central venous catheter sur cette radiographie thoracique ? "
+        "Répondez uniquement par 1 pour oui ou 0 pour non.")
+    assert med_bank.pair(BANK, "normal", "EN") == ("This chest X-ray is normal.", "This chest X-ray is abnormal.")
+    assert med_bank.pair(BANK, "normal", "EN", "negated") == ("This chest X-ray is abnormal.", "This chest X-ray is normal.")
+    assert med_bank.pair(BANK, "mass", "EN")[1] == "This chest X-ray does not show a pulmonary mass."
+
+
+def test_romanized_questions_cover_the_three_non_latin_scripts():
+    texts = med_bank.load_romanized()
+    assert set(texts["concepts"]) == set(BANK["concepts"])
+    for concept, languages in texts["concepts"].items():
+        assert sorted(languages) == ["AR", "HI", "ZH"], concept
+    question, present, absent = med_bank.romanized(texts, "normal", "HI")
+    assert question == "kyā yah chātī kā eks-re sāmāny hai? keval YES yā NO meṃ uttar deṃ."
+    assert all(text.isascii() or True for text in (present, absent)) and present != absent
+
+
+def test_answer_sets_never_let_a_word_mean_yes_and_no():
+    sets = med_bank.answer_sets(BANK)
+    assert sets["numeric_10"] == {"yes": ["1"], "no": ["0"]} and sets["label_ab"] == {"yes": ["A"], "no": ["B"]}
+    for lists in sets.values():
+        assert not {word.lower() for word in lists["yes"]} & {word.lower() for word in lists["no"]}
+
+
+def test_draft_terms_are_named_until_they_are_validated():
+    assert med_bank.unvalidated(BANK) == sorted(BANK["concepts"])  # the terms of the paper are still drafts
+    assert "DRAFT TERMS: 35 of 35 concepts" in med_bank.draft_notice(BANK)
+    done = {"concepts": {name: {**terms, "status": "validated"} for name, terms in BANK["concepts"].items()}}
+    assert med_bank.unvalidated(done) == [] and med_bank.draft_notice(done) is None
 
 
 def test_every_concept_a_label_rule_can_give_is_in_the_bank():
-    given = {*nih_rule.FINDINGS.values(), *ranzcr_rule.DEVICES, *padchest_rule.CONCEPTS,
-             *nigeria_rule.CONCEPTS.values(), "covid19", "pneumothorax", "pneumonia", "tuberculosis", "nodule"}
+    given = {*nih_rule.CONCEPTS, *ranzcr_rule.DEVICES, *padchest_rule.CONCEPTS, *nigeria_rule.ASKED,
+             "opacity", "pneumothorax", "pneumonia", "tuberculosis", "nodule", "normal"}
     assert given <= set(BANK["concepts"])
 
 
@@ -395,11 +456,11 @@ def test_radlex_identifiers_are_rids_or_left_empty():
 
 
 def test_languages_only_change_the_words():
-    table = pd.DataFrame([{"image": "a.png", "patient": "p", "site": "S", "concept": "effusion", "label": "positive"}])
+    table = pd.DataFrame([{"image": "a.png", "patient": "p", "site": "S", "concept": "pleural_effusion", "label": "positive"}])
     rows = common.add_languages(table, BANK)
     assert rows["language"].tolist() == LANGUAGES
-    assert rows.iloc[0]["question"] == ("Finding: pleural effusion. Is this finding present on this chest X-ray? "
-                                        "Answer only YES or NO.")
+    assert rows.iloc[0]["question"] == "Is there evidence of pleural effusion in this chest X-ray? Answer only YES or NO."
+    assert rows.iloc[0]["negative_text"] == "This chest X-ray does not show pleural effusion."
     assert rows.drop(columns=["language", "question", "positive_text", "negative_text"]).nunique().max() == 1
 
 
@@ -433,11 +494,11 @@ def test_sample_keeps_one_image_per_patient_and_is_repeatable():
 
 def test_write_source_drops_unknown_before_sampling(med_data):
     table = pd.DataFrame([
-        {"image": str(med_data / "a.png"), "patient": "S_1", "site": "S", "concept": "effusion", "label": "positive"},
+        {"image": str(med_data / "a.png"), "patient": "S_1", "site": "S", "concept": "pleural_effusion", "label": "positive"},
         {"image": str(med_data / "a.png"), "patient": "S_1", "site": "S", "concept": "nodule", "label": "unknown"},
     ])
     written = pd.read_parquet(common.write_source("s", table, med_data / "tables"))
-    assert set(written["concept"]) == {"effusion"} and len(written) == 7
+    assert set(written["concept"]) == {"pleural_effusion"} and len(written) == 7
 
 
 def test_write_source_refuses_a_concept_outside_the_bank(med_data):
@@ -650,9 +711,10 @@ def test_a_prepared_source_runs_through_core_and_gives_the_tables(med_data, tmp_
         "models": [{"name": name, "adapter": "fake_generative", "params": {"faults": False}} for name in ("m1", "m2")],
     }, tmp_path / "experiment.yaml")
     run = do_run(load_experiment(tmp_path / "experiment.yaml"))
-    assert len(pd.read_parquet(run / "results.parquet")) == 2 * 2 * 7  # 2 images, 2 models, 7 languages
+    assert len(pd.read_parquet(run / "results.parquet")) == 2 * 2 * 2 * 7  # 2 images, 2 concepts, 2 models, 7 languages
     folder = paper.write_tables(run)
-    assert pd.read_csv(folder / "matched_cells.csv").to_dict("records") == [{"site": "Pakistan TB", "concept": "tuberculosis"}]
+    assert pd.read_csv(folder / "matched_cells.csv").to_dict("records") == [
+        {"site": "Pakistan TB", "concept": "normal"}, {"site": "Pakistan TB", "concept": "tuberculosis"}]
     assert sorted(pd.read_csv(folder / "languages.csv")["language"]) == sorted(LANGUAGES)
 
 
@@ -660,3 +722,36 @@ def test_prepared_tables_go_where_the_experiment_reads_them():
     folder = inspect.signature(common.write_source).parameters["folder"].default
     paths = read_yaml(MED / "configs" / "experiment.yaml")["data"]
     assert {(MED / "configs" / path).parent.resolve() for path in paths} == {folder.resolve()}
+
+
+# --- validation gate --------------------------------------------------------------------------------------------
+
+@pytest.fixture
+def one_source_experiment(med_data, tmp_path):
+    from prepare import tb_pakistan
+
+    image(med_data / "tb_pakistan" / "TB Chest X-rays" / "img1.jpg")
+    image(med_data / "tb_pakistan" / "Normal Chest X-rays" / "img2.jpg")
+    common.write_source("tb_pakistan", tb_pakistan.prepare(med_data), med_data / "tables")
+    write_yaml({
+        "schema_version": 1, "data": str(med_data / "tables" / "tb_pakistan.parquet"),
+        "roles": {"unit": "patient", "positive_text": "positive_text", "negative_text": "negative_text"},
+        "axes": {"language": {"type": "controlled"}, "site": {"type": "observed"}, "concept": {"type": "observed"}},
+        "task": {"type": "yes_no"}, "models": [{"name": "m1", "adapter": "fake_generative", "params": {"faults": False}}],
+    }, tmp_path / "experiment.yaml")
+    write_yaml({"schema_version": 1, "run": "x", "axes": {"language": {"reference": "EN"}}, "stats": {"bootstrap": 100}},
+               tmp_path / "analysis.yaml")
+    return tmp_path
+
+
+def test_an_official_run_is_refused_while_the_terms_are_drafts(one_source_experiment):
+    with pytest.raises(SystemExit, match="35 of 35 concepts have terms that no clinician has reviewed"):
+        paper.main([str(one_source_experiment / "experiment.yaml"), str(one_source_experiment / "analysis.yaml")])
+    assert not (one_source_experiment / "workspace" / "runs").exists()  # stopped before any model
+
+
+def test_a_draft_run_can_be_asked_for_and_its_report_says_so(one_source_experiment):
+    paper.main([str(one_source_experiment / "experiment.yaml"), str(one_source_experiment / "analysis.yaml"), "--allow-unvalidated"])
+    report = next(one_source_experiment.glob("workspace/runs/*/analyses/*/report/report.md")).read_text(encoding="utf-8")
+    assert "> DRAFT TERMS: 35 of 35 concepts have translations not yet reviewed" in report
+    assert next(one_source_experiment.glob("workspace/runs/*/paper/paper.md")).is_file()

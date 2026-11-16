@@ -9,4 +9,5 @@ export PYTHONPATH=.
 python check.py configs/experiment.yaml
 python -m prepare
 # paper.py registers the Med models, runs vlmshift all, then writes the tables of the paper.
-python paper.py configs/experiment.yaml configs/analysis.yaml
+# While the terms of configs/questions.yaml are drafts, this stops with the reason: add --allow-unvalidated to go on.
+python paper.py configs/experiment.yaml configs/analysis.yaml "$@"
