@@ -263,6 +263,16 @@ EXPLAIN = {
             "weigh": "Adds up these counts according to a draw.",
             "stat_of": "Prepares the computation of a metric or a change rate.",
         }),
+    S + "stats/scores.py": dict(
+        goal="The metrics that read a continuous score instead of a yes or a no. A contrastive model gives a margin for each question: the score of the positive phrase minus that of the negative one. AUROC and AUPRC ask whether these margins rank the positive cases above the negative ones, whatever the threshold. They only use the order of the margins, which are not probabilities. Like every other number, they are recomputed on each draw of units.",
+        fn={
+            "by_chunks": "Computes a statistic on a few draws at a time, to bound the memory.",
+            "ties": "Finds, in sorted scores, where each group of equal scores starts and ends.",
+            "auroc_stat": "Prepares the AUROC: the chance that a positive case outranks a negative one.",
+            "auprc_stat": "Prepares the average precision over all margin thresholds.",
+            "score_stats": "Gives the score metrics of some rows, with the units they rest on.",
+            "score_shifts": "Gives the shift of each score metric between two levels.",
+        }),
     S + "stats/bootstrap.py": dict(
         goal="Measures the uncertainty of each number. The idea: draw the units at random, with replacement, 2000 times by default, and see how the number varies. It draws units and not rows, because two images of the same subject are not independent. A shift is significant if its corrected interval does not contain 0.",
         fn={

@@ -16,6 +16,7 @@ from .bootstrap import draw_weights, summarize
 from .metrics import Sums, stat_of, unit_sums
 from .pairing import pairing_keys, select
 from .probes import run_probes
+from .scores import score_shifts, score_stats
 from .shifts import change_sums, delta_of
 
 NOT_PROBED = {"id", "image", "image_hash", "unit", "sample_id", "prompt", "positive_prompt", "negative_prompt"}
@@ -80,6 +81,8 @@ def base_rows(cell, axis, level, settings, labels) -> list[dict]:
         used, n_units = with_unit_codes(at_level[at_level["status"].isin(statuses)])
         sums = unit_sums(used, n_units)
         stats = {name: (stat_of(name, sums), support(name, sums)) for name in BASE[mode]}
+        if mode == "valid":  # a tie has a margin but no decision: the score metrics need both
+            stats |= score_stats(used, n_units)
         details = {**labels, "level_a": level, "level_b": None, "mode": mode, "n_error": n_error, "n_excluded": 0}
         rows += make_rows(stats, used, settings, 1, False, details)
     return rows
@@ -96,6 +99,8 @@ def shift_rows(cell, axis, a, b, keys, settings, m, labels) -> list[dict]:
         at_a, at_b = used[used[axis] == a], used[used[axis] == b]
         sums_a, sums_b = unit_sums(at_a, n_units), unit_sums(at_b, n_units)
         stats = {f"delta_{name}": (delta_of(name, sums_a, sums_b), support(name, sums_a, sums_b)) for name in BASE[mode]}
+        if mode == "valid":
+            stats |= score_shifts(at_a, at_b, n_units)
         if keys:  # an answer change only exists for a controlled axis
             sums = change_sums(at_a, at_b, keys, n_units)
             stats |= {name: (stat_of(name, sums), support(name, sums)) for name in CHANGES[mode]}
@@ -219,6 +224,7 @@ def run_analysis(config) -> Path:
         # about the finding, so it compares with the label and with the plain question.
         negated = np.array(negated_rows(lines[experiment.task.negated]), dtype=bool)
         lines["yhat"] = lines["yhat"].where(~negated, 1 - lines["yhat"])
+        lines["margin"] = lines["margin"].where(~negated, -lines["margin"])
 
     rows = []
     for measure in measures:

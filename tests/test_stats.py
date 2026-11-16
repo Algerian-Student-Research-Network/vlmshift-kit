@@ -428,3 +428,60 @@ def test_each_number_says_where_it_comes_from(full_run):
     assert set(metrics["aggregation"]) == {"model x language", "model x site", "model x language x site"}
     assert metrics["analysis"].eq(full_run.analysis.name).all() and metrics["run"].eq(full_run.run.name).all()
     assert metrics["code_version"].notna().all() and (metrics["n_images"] > 0).all()
+
+
+# --- AUROC and AUPRC of contrastive models ---
+
+
+def scored(rows) -> pd.DataFrame:
+    """Rows (unit, label 1/0, margin) → the table the score metrics read."""
+    table = pd.DataFrame(rows, columns=["unit", "y", "margin"]).astype({"y": float})
+    return with_unit_codes(table)
+
+
+def test_score_metrics_match_scikit_learn():
+    from sklearn.metrics import average_precision_score, roc_auc_score
+
+    from vlmshift.stats.scores import score_stats
+
+    rng = np.random.default_rng(0)
+    y = rng.integers(0, 2, 200)
+    margins = np.round(rng.normal(y * 0.8, 1), 1)  # rounded: many ties
+    used, n_units = scored(zip([f"u{i}" for i in range(200)], y, margins))
+    stats = score_stats(used, n_units)
+    one = np.ones((1, n_units))
+    assert stats["auroc"][0](one)[0] == pytest.approx(roc_auc_score(y, margins))
+    assert stats["auprc"][0](one)[0] == pytest.approx(average_precision_score(y, margins))
+    assert stats["auroc"][1] == min(y.sum(), (1 - y).sum())
+
+
+def test_score_metrics_follow_the_draw_of_units():
+    """Drawing a unit twice is the same as writing its rows twice."""
+    from sklearn.metrics import average_precision_score, roc_auc_score
+
+    from vlmshift.stats.scores import score_stats
+
+    rows = [("a", 1, 0.9), ("a", 0, 0.2), ("b", 1, 0.4), ("b", 0, 0.5), ("c", 1, 0.1), ("c", 0, -0.3)]
+    used, n_units = scored(rows)
+    weights = np.array([[2.0, 0.0, 1.0]])  # a twice, b never, c once
+    y = [1, 0, 1, 0, 1, 0]
+    margins = [0.9, 0.2, 0.9, 0.2, 0.1, -0.3]
+    stats = score_stats(used, n_units)
+    assert stats["auroc"][0](weights)[0] == pytest.approx(roc_auc_score(y, margins))
+    assert stats["auprc"][0](weights)[0] == pytest.approx(average_precision_score(y, margins))
+
+
+def test_one_class_gives_no_score_metric_never_a_number():
+    from vlmshift.stats.scores import score_stats
+
+    used, n_units = scored([("a", 1, 0.9), ("b", 1, 0.2)])
+    stats = score_stats(used, n_units)
+    assert stats["auroc"][1] == 0 and np.isnan(stats["auroc"][0](np.ones((1, n_units)))[0])
+
+
+def test_only_contrastive_models_get_score_metrics(full_run):
+    scores = full_run.metrics[full_run.metrics["metric"].isin(["auroc", "delta_auroc", "auprc", "delta_auprc"])]
+    assert set(scores["model"]) == {"fake-clip"} and set(scores["mode"]) == {"valid"}
+    row = find(full_run.metrics, model="fake-clip", measure="language", level_a="EN", level_b=None,
+               metric="auroc", mode="valid", split=None)
+    assert row["value"] == 1  # the fake model is right on every English question
