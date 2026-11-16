@@ -19,7 +19,8 @@
             "standardized",
             "heterogeneity",
             "pareto",
-            "link"
+            "link",
+            "parser"
           ],
           "title": "Type",
           "type": "string"

@@ -19,14 +19,16 @@ from .effects import consistency_rows, disagreement_shift_rows, information_rows
 from .paired import holm, level_pairs, paired_tests
 from .pairing import axis_levels, split_cells
 from .regression import regression_rows, variance_rows
-from .robustness import heterogeneity_rows, link_rows, pareto_rows, ranking_rows, standardized_rows, worst_group_rows
+from .robustness import (
+    heterogeneity_rows, link_rows, pareto_rows, parser_rows, ranking_rows, standardized_rows, worst_group_rows,
+)
 
 ANALYSIS_COLUMNS = [
     "name", "type", "experimental", "model", "split", "level_a", "level_b", "statistic", "value",
     "ci_low", "ci_high", "ci95_low", "ci95_high", "significant", "p", "p_holm", "n", "n_units", "note",
 ]
 # Validated on real runs and listed as such in the design: the others stay experimental.
-STABLE = {"tests", "consistency", "ranking", "worst_group", "standardized"}
+STABLE = {"tests", "consistency", "ranking", "worst_group", "standardized", "parser"}
 ALL_MODELS = "(all models)"
 # The axes an analysis compares on paired samples: they must be controlled.
 PAIRED = {"tests": ["compare"], "consistency": ["compare"], "disagreement_shift": ["compare", "across"],
@@ -161,6 +163,8 @@ def analysis_rows(analysis, config, experiment, lines, variants, probes, earlier
     if kind == "regression":
         return per_model(lines, analysis.split_by, levels,
                          lambda cell: regression_rows(cell, analysis.axes, analysis.covariates, reference))
+    if kind == "parser":
+        return per_model(lines, analysis.split_by, levels, lambda cell: parser_rows(cell, analysis.by, experiment.task))
     if kind == "variance":
         return per_model(lines, analysis.split_by, levels, lambda cell: variance_rows(cell, analysis.axes))
     return link_rows(probes, earlier, analysis.target, analysis.of)

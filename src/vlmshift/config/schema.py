@@ -122,6 +122,11 @@ class ModelConfig(Block):
     revision: str | None = None
     params: dict = {}
     embeddings: bool = False
+    # The card of the model, copied to the run log and the report. It changes no answer.
+    family: str | None = None      # such as "medical contrastive" or "general generative"
+    license: str | None = None     # the licence of the weights
+    gpu: str | None = None         # what it needs, such as "16 GB"
+    validated: str | None = None   # where and when it last passed vlmshift check, such as "L4, 2026-10-06"
 
 
 class Inference(Block):
@@ -190,7 +195,7 @@ ANALYSIS_NEEDS = {
     "interaction": ["axes"], "regression": ["axes"], "variance": ["axes"],
     "disagreement_shift": ["compare", "across"], "taxonomy": ["compare", "across"],
     "worst_group": ["by"], "standardized": ["by", "over"], "heterogeneity": ["by", "over"],
-    "pareto": ["by", "compare"], "link": ["target", "of"],
+    "pareto": ["by", "compare"], "link": ["target", "of"], "parser": ["by"],
 }
 ANALYSIS_METRICS = ("sens", "spec", "ba", "acc", "f1", "macro_f1", "mcc", "yes_rate")
 
@@ -200,7 +205,7 @@ class Analysis(Block):
 
     type: Literal[
         "tests", "consistency", "information", "ranking", "interaction", "regression", "variance",
-        "disagreement_shift", "taxonomy", "worst_group", "standardized", "heterogeneity", "pareto", "link",
+        "disagreement_shift", "taxonomy", "worst_group", "standardized", "heterogeneity", "pareto", "link", "parser",
     ]
     name: str | None = None          # to tell two analyses of the same type apart
     compare: str | None = None       # the axis whose levels are compared

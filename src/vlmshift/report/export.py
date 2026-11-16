@@ -108,6 +108,7 @@ def load_inputs(analysis_dir: Path) -> SimpleNamespace:
         probes=pd.read_parquet(analysis_dir / "probes.parquet"),
         counts=pd.read_parquet(audit_dir / "counts.parquet"),
         samples=pd.read_parquet(audit_dir / "samples.parquet"),
+        columns=pd.read_parquet(audit_dir / "columns.parquet"),
         validation=pd.read_parquet(validation) if validation.exists() else pd.DataFrame(),
         issues=join_issues([
             pd.read_parquet(path)
@@ -127,6 +128,7 @@ def build_tables(data: SimpleNamespace) -> dict[str, pd.DataFrame]:
         "metrics": metrics,
         "probes": data.probes,
         "audit_counts": data.counts,
+        "audit_columns": data.columns,
         "coverage": coverage(data.variants, data.results, models, axes, controlled, data.table),
         "reader_share": reader_share(lines, axes, controlled, data.table),
         "reader_validation": data.validation,
@@ -217,6 +219,24 @@ def summary_section(data, metrics: pd.DataFrame, covered: pd.DataFrame) -> list[
     return lines
 
 
+def models_section(log: dict) -> list[str]:
+    """The card of each model: what was loaded, and what its experiment states about it."""
+    rows = []
+    for name, model in log["models"].items():
+        rows.append({
+            "model": name, "kind": model.get("kind"), "id": model.get("id"),
+            "revision": model.get("revision") or "NOT PINNED",
+            **{key: model.get(key) or "not stated" for key in ("family", "license", "gpu", "validated")},
+        })
+    lines = [block(pd.DataFrame(rows))]
+    if loose := [row["model"] for row in rows if row["revision"] == "NOT PINNED"]:
+        lines += ["", f"**Not pinned**: {', '.join(loose)}. Without a revision, the weights can change between two runs."]
+    if unchecked := [row["model"] for row in rows if row["validated"] == "not stated"]:
+        lines += ["", f"**Not stated as validated** on the machine of this run: {', '.join(unchecked)}. "
+                      "`vlmshift check` tries a model; write the result in `validated`."]
+    return lines
+
+
 def audit_section(data) -> list[str]:
     samples = data.samples
     return [
@@ -224,6 +244,9 @@ def audit_section(data) -> list[str]:
         f"variants per sample, {int(samples['missing'].notna().sum())} incomplete.",
         "",
         block(data.counts),
+        "",
+        *(["Columns with empty rows:", block(data.columns[data.columns["n_empty"] > 0])]
+          if (data.columns["n_empty"] > 0).any() else ["No column of the dataset has an empty row."]),
     ]
 
 
@@ -278,6 +301,7 @@ def render(data, tables: dict) -> str:
     measures = sorted(data.metrics["measure"].unique())
     sections = {
         "Summary": summary_section(data, tables["metrics"], tables["coverage"]),
+        "Models": models_section(data.log),
         "Audit": audit_section(data),
         "Results by measure": [
             *[f"- `matrix_{name}.csv`: measure {name}" for name in measures],

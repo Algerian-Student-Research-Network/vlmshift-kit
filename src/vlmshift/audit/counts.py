@@ -30,6 +30,18 @@ def count_cells(table: pd.DataFrame, columns: list[str]) -> list[dict]:
     return rows
 
 
+ONE_SIDED = 0.1  # below this share of one class, a level has too few of its cases to measure it
+NOT_DATA = {"id", "image_hash", "sample_id", "unit"}  # written by the tool: never empty
+
+
+def column_table(table: pd.DataFrame) -> pd.DataFrame:
+    """For each column of the dataset: how many rows leave it empty, and how many values it takes."""
+    rows = [{"column": column, "n_empty": int(table[column].isna().sum()),
+             "share_empty": float(table[column].isna().mean()), "n_values": int(table[column].nunique())}
+            for column in table.columns if column not in NOT_DATA]
+    return pd.DataFrame(rows, columns=["column", "n_empty", "share_empty", "n_values"])
+
+
 def run_audit(config, table: Step) -> pd.DataFrame:
     """Write the audit in audit/: each axis alone, then all axes crossed."""
     axes = list(config.axes)
@@ -43,6 +55,17 @@ def run_audit(config, table: Step) -> pd.DataFrame:
     for row in counts[counts["n_units"] < MIN_UNITS].itertuples():
         issues.warn("low_count", f"{row.axis} = {row.level}: {row.n_units} units (threshold {MIN_UNITS})")
 
+    known = counts["n_positive"] + counts["n_negative"]
+    one_sided = counts[(known >= MIN_UNITS) & ((counts["positive_rate"] < ONE_SIDED) | (counts["positive_rate"] > 1 - ONE_SIDED))]
+    for row in one_sided.itertuples():
+        issues.warn("label_imbalance", (
+            f"{row.axis} = {row.level}: {row.n_positive} positive and {row.n_negative} negative labels. "
+            "Sensitivity or specificity will rest on few cases there: read the balanced accuracy with its interval"
+        ))
+    columns = column_table(table.df)
+    for row in columns[columns["n_empty"] > 0].itertuples():
+        issues.warn("column_empty", f"Column {row.column}: {row.n_empty} empty rows ({row.share_empty:.0%})")
+
     controlled = [axis for axis, spec in config.axes.items() if spec.type == "controlled"]
     folder = table.dir / "audit"
     samples = sample_table(table.df, controlled)
@@ -54,8 +77,10 @@ def run_audit(config, table: Step) -> pd.DataFrame:
         ))
     write_parquet(counts, folder / "counts.parquet", table.hash)
     write_parquet(samples, folder / "samples.parquet", table.hash)
+    write_parquet(columns, folder / "columns.parquet", table.hash)
     # The same tables for a spreadsheet: the audit is meant to be read before any model runs.
     write_csv(counts, folder / "counts.csv", issues)
     write_csv(samples, folder / "samples.csv", issues)
+    write_csv(columns, folder / "columns.csv", issues)
     write_parquet(issues.frame(), folder / "issues.parquet", table.hash)
     return counts

@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import kendalltau, spearmanr
 
+from ..tasks.yes_no import YesNoTask, first_word, lists_of
 from .effects import decisions
 from .metrics import METRICS, support, unit_sums, weigh
 from .pairing import with_unit_codes
@@ -135,6 +136,38 @@ def pareto_rows(lines: pd.DataFrame, by: list[str], axis: str, keys: list[str], 
         scores = {**own.to_dict(), "pareto_optimal": float(not dominated)}
         rows += [{"model": model, "level_a": "(all groups)", "statistic": name, "value": float(value), "n": len(table),
                   "note": f"metric {metric}, stability over {axis}, n = models compared"} for name, value in scores.items()]
+    return rows
+
+
+def parser_rows(lines: pd.DataFrame, by: list[str], task) -> list[dict]:
+    """How much of a shift comes from reading the answers, for a generative model.
+
+    Each answer is read twice with the same lists: whole (strict), then its first word only
+    (lenient). "Yes, a nodule is visible" is INVALID read whole and a yes read by its first word.
+    A level where the two differ a lot is a level where the model does not follow the format.
+    """
+    lines = lines[lines["response"].notna()]
+    if lines.empty:
+        return []
+    reader = YesNoTask()
+    lists = lists_of(task, lines)
+    lines = lines.assign(
+        strict=[reader.read(response, answers) for response, answers in zip(lines["response"], lists)],
+        lenient=[reader.read(first_word(response), answers) for response, answers in zip(lines["response"], lists)],
+    )
+    rows = []
+    for levels, group in lines.groupby(by):
+        levels = levels if isinstance(levels, tuple) else (levels,)
+        both = group[group["strict"].notna() & group["lenient"].notna()]
+        found = {
+            "strict_invalid_rate": group["strict"].isna().mean(),
+            "lenient_invalid_rate": group["lenient"].isna().mean(),
+            "rescued_rate": (group["strict"].isna() & group["lenient"].notna()).mean(),
+            "reading_disagreement": (both["strict"] != both["lenient"]).mean() if len(both) else float("nan"),
+        }
+        shared = {"level_a": ", ".join(f"{axis}={level}" for axis, level in zip(by, levels)), "n": len(group),
+                  "n_units": group["unit"].nunique(), "note": "lists only, without the small LLM"}
+        rows += [{**shared, "statistic": name, "value": float(value)} for name, value in found.items()]
     return rows
 
 

@@ -225,7 +225,9 @@ def make_params(config, entry) -> dict:
 
 
 def make_model(config, entry) -> Model:
-    return get_adapter(entry.adapter)(entry.name, entry.id or entry.name, entry.revision, make_params(config, entry))
+    model = get_adapter(entry.adapter)(entry.name, entry.id or entry.name, entry.revision, make_params(config, entry))
+    model.card = {key: getattr(entry, key) for key in ("family", "license", "gpu", "validated")}
+    return model
 
 
 def chosen_models(config, only: list[str] | None) -> list:
@@ -333,7 +335,7 @@ def run_inference(config, variants: Step, only: list[str] | None = None) -> Path
     # writes its own audit there, with other axes.
     audit = variants.dir.parents[1] / "audit"
     (folder / "audit").mkdir(exist_ok=True)
-    for name in ("counts.parquet", "samples.parquet", "issues.parquet"):
+    for name in ("counts.parquet", "samples.parquet", "columns.parquet", "issues.parquet"):
         shutil.copyfile(audit / name, folder / "audit" / name)
 
     issues = Issues(step=4)

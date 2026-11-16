@@ -63,7 +63,7 @@ EXPLAIN = {
         goal="The conductor of step 1. It turns your starting file into a reliable table: reading, standard names, identifiers, checks, then writing. If a serious error exists, it first writes the list of issues, then stops.",
         fn={"build_table": "Runs the whole step and returns the table, its folder and its fingerprint."}),
     S + "data/io.py": dict(
-        goal="Reads the input files, in CSV or Parquet. Everything becomes text, and an empty cell becomes a missing value. All the data is then handled the same way.",
+        goal="Reads the input files, in CSV, Parquet or JSONL. Everything becomes text, and an empty cell becomes a missing value. All the data is then handled the same way.",
         fn={
             "read_file": "Reads one file.",
             "read_table": "Puts several files end to end and notes the folder of each, to find the images.",
@@ -107,9 +107,10 @@ EXPLAIN = {
             "conditions_command": "Runs the command and prints what to do next.",
         }),
     S + "audit/counts.py": dict(
-        goal="The conductor of step 2. It counts what the table holds: rows, samples, units and labels, for each level of each axis, then for all axes crossed. It flags what falls under 30 units. It never changes the table.",
+        goal="The conductor of step 2. It counts what the table holds: rows, samples, units and labels, for each level of each axis, then for all axes crossed. It flags what falls under 30 units, a level where one class is almost absent, and the columns with empty rows. It never changes the table.",
         fn={
             "count_cells": "Counts each combination of levels, even an empty one.",
+            "column_table": "Counts, for each column of the dataset, its empty rows and its values.",
             "run_audit": "Runs the step and writes the audit.",
         }),
     S + "audit/samples.py": dict(
@@ -137,6 +138,8 @@ EXPLAIN = {
         goal="Everything specific to yes/no questions. It turns a raw answer such as \"Yes.\" into a yes or no decision, by comparing it to the answer lists. It also says whether a decision is right against the label, and reads the column that marks negated questions.",
         fn={
             "negated_rows": "Reads a negation column: negated, not negated, or unclear.",
+            "first_word": "Gives the first word of an answer, for a lenient reading.",
+            "lists_of": "Gives the answer lists that read each row.",
             "is_noise": "Spots punctuation and spaces, in every language.",
             "clean": "Cleans an answer: lower case, no punctuation at the edges.",
             "YesNoTask": "The yes/no task.",
@@ -287,6 +290,7 @@ EXPLAIN = {
             "heterogeneity_rows": "Measures how much a metric varies between the levels of an axis.",
             "stability": "Gives the share of samples that keep their answer at every level.",
             "pareto_rows": "Finds the models not beaten on mean, worst group and stability together.",
+            "parser_rows": "Reads each answer whole, then by its first word, and compares the two.",
             "link_rows": "Relates, across models, the probe score to the size of an interaction.",
         }),
     S + "stats/regression.py": dict(
@@ -468,6 +472,7 @@ BLOCKS = {
         items={
             "counts.parquet, .csv": "The counts by level and by crossing of axes. The CSV opens in a spreadsheet.",
             "samples.parquet, .csv": "One row per sample: its variants and its missing levels.",
+            "columns.parquet, .csv": "One row per column of the dataset: its empty rows and its number of values.",
             "issues.parquet": "What falls under the threshold of 30 units.",
         },
         cols=[("WRITTEN BY", [(COUNTS, "run_audit")]), ("READ BACK BY", [(EXPORT, "load_inputs")])]),

@@ -3,8 +3,9 @@ import pandas as pd
 import pytest
 
 from vlmshift.cli import do_prepare
-from vlmshift.common import VLMShiftError, canonical, sha16
-from vlmshift.config.load import ADDED_KEYS, config_hash, load_experiment, read_yaml, write_yaml
+from conftest import FIXTURES
+from vlmshift.common import VLMShiftError
+from vlmshift.config.load import config_hash, load_analysis, load_experiment, write_yaml
 from vlmshift.extensions import register_adapter
 from vlmshift.inference.adapters.fake import FakeGenerative, has_circle, image_number
 from vlmshift.inference.runner import run_inference
@@ -97,10 +98,8 @@ def test_lists_and_column_go_together(formats):
         formats(answers_by=None)
 
 
-def test_keys_added_later_do_not_move_an_older_fingerprint(toy):
-    """An experiment written before answer_sets existed keeps its run folder."""
-    config = load_experiment(toy / "experiment.yaml")
-    before = config.model_dump(exclude={"data", "workspace", "run"})
-    for key in ADDED_KEYS & set(before["task"]):
-        assert before["task"].pop(key) is None
-    assert config_hash(config) == sha16(canonical([before]))
+def test_keys_added_later_do_not_move_an_older_fingerprint():
+    """The toy files, written before any key was added, keep the fingerprints the first version
+    gave them: the runs and analyses of an existing workspace are found again."""
+    assert config_hash(load_experiment(FIXTURES / "toy" / "experiment.yaml")) == "964d649c8a42c896"
+    assert config_hash(load_analysis(FIXTURES / "toy" / "analysis.yaml"), "r") == "c5b388e966c2fb63"
