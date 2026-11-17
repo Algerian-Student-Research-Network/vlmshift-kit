@@ -1,0 +1,8 @@
+.git
+.venv
+**/__pycache__
+**/workspace
+packages/med/data
+examples/pope_mini/data
+docs
+tests
