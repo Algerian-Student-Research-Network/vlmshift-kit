@@ -96,6 +96,9 @@ The [tutorial](docs/tutorial.md) goes through this step by step.
 - **Nothing hidden.** The exact text sent to each model is stored, and every problem is reported.
 - **Safe to stop.** Answers are cached one by one. Run the command again and the tool resumes.
 - **Reanalysis is free.** Statistics read the disk and never call a model.
+- **Image controls.** One command asks the same questions on a blank, shuffled, blurred or swapped image.
+- **Beyond one shift.** Paired tests, interactions between axes, worst group, ranking of the models, with the experimental ones marked as such.
+- **A report to share.** One HTML page with figures in SVG and PDF, and a file that says where every number comes from.
 
 ## Models
 
@@ -144,7 +147,7 @@ This is a first version.
 - **Google Colab**: the notebook ran from the first cell to the last with the library versions of Colab, on a processor. Not yet on a Colab card.
 - **Tested with stand-ins only**: the small LLM (tiny random models).
 - **Not done yet**: a run on an NVIDIA card. Do this before trusting a result from a generative model.
-- **Med package**: only an example data source is written so far.
+- **Med package**: the concepts, terms and wordings of the paper, its arms rebuilt from its evaluation plans, and a replay of its recorded answers that gives back the frame and term effects of the paper for two models. The terms are drafts until a clinician reviews them. None of its 10 models has run on its real weights through this code yet.
 
 ## Development
 

@@ -136,7 +136,7 @@
 </tbody>
 </table></div>
 <h2 id="3-your-data">3. Your data</h2>
-<p>Your data is one table, in CSV or Parquet, with <strong>one row per variant</strong>. Column names are free: <code>roles</code> says which column plays which part.</p>
+<p>Your data is one table, in CSV, Parquet or JSONL (one row per line), with <strong>one row per variant</strong>. Column names are free: <code>roles</code> says which column plays which part.</p>
 <h3 id="start-from-a-folder-of-images">Start from a folder of images</h3>
 <p>You do not have to write the table by hand. <code>vlmshift init</code> makes it from a folder, with a starting <code>experiment.yaml</code> and <code>analysis.yaml</code> next to it:</p>
 <pre><code class="language-bash">vlmshift init images --question &quot;EN=Is there a dog in this image? Answer yes or no.&quot; --question &quot;FR=Y a-t-il un chien dans cette image ? Répondez par oui ou non.&quot;
@@ -215,6 +215,50 @@ images/img2.png,Y a-t-il un cercle dans cette image ? Répondez par oui ou non.,
 <li><strong>Several files</strong>: <code>data</code> can be a list. The files are put end to end and must have the same columns: the import stops otherwise.</li>
 <li><strong>CSV from a spreadsheet</strong>: commas, or semicolons as written by a spreadsheet set to French; UTF-8, or Windows-1252 as written by Excel. The first line tells the separator.</li>
 </ul>
+<h3 id="the-same-questions-on-changed-images">The same questions on changed images</h3>
+<p>To see what a model really takes from the image, ask the same questions on a changed image:</p>
+<pre><code class="language-bash">vlmshift conditions experiment.yaml --add blank shuffled blur noise:3 --within site
+</code></pre>
+<p>This writes a larger table in <code>conditions/</code>, next to the changed images: each row once per condition, with a new column, <code>image_condition</code>, whose original level is <code>real</code>. Point <code>data:</code> to that table, declare <code>image_condition: {type: controlled}</code>, and give it the reference <code>real</code> in <code>analysis.yaml</code>. The rows of one sample keep their <code>sample_id</code>, so each condition is compared with the original image on the same questions.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>blank</code></td>
+<td>A gray image of the same size: no evidence at all</td>
+</tr>
+<tr>
+<td><code>shuffled</code></td>
+<td>The image of another sample, inside each group of <code>--within</code></td>
+</tr>
+<tr>
+<td><code>border_cropped</code></td>
+<td>5% cut on each side, then scaled back: the edges often carry the marks of a site</td>
+</tr>
+<tr>
+<td><code>contrast_standardized</code></td>
+<td>The full range of gray used</td>
+</tr>
+<tr>
+<td><code>blur</code>, <code>noise</code>, <code>jpeg</code>, <code>brightness</code>, <code>contrast</code>, <code>downsample</code></td>
+<td>Five severities each. <code>blur</code> gives the five, <code>blur:3</code> one</td>
+</tr>
+<tr>
+<td><code>same_label_swap</code></td>
+<td>An image of another level of <code>--across</code> (another site) with the same label and the same <code>--same</code> columns (the concept)</td>
+</tr>
+<tr>
+<td><code>mask:&lt;type&gt;</code></td>
+<td>The boxes of that type in <code>--boxes</code> (a CSV: <code>image, box_type, x1, y1, x2, y2</code>) filled with the median gray</td>
+</tr>
+</tbody>
+</table></div>
+<p>The same table and the same <code>--seed</code> give the same files. A mask needs boxes drawn by someone: no position is invented, and a row without a box is left out and counted.</p>
 <h3 id="what-is-checked-at-import">What is checked at import</h3>
 <div class="table"><table>
 <thead>
@@ -363,6 +407,18 @@ inference:
 <td>No</td>
 <td>See <a href="#6-reading-the-answers">section 6</a></td>
 <td>Accepted words, or a path to a YAML file with the same shape</td>
+</tr>
+<tr>
+<td><code>task.answer_sets</code>, <code>task.answers_by</code></td>
+<td>No</td>
+<td>None</td>
+<td>One answer list per format, and the column that names the format of each row</td>
+</tr>
+<tr>
+<td><code>task.negated</code></td>
+<td>No</td>
+<td>None</td>
+<td>The column that marks negated questions</td>
 </tr>
 <tr>
 <td><code>task.reader_llm</code></td>
@@ -533,10 +589,33 @@ models:
 <pre><code class="language-bash">vlmshift run experiment.yaml --only model-b
 </code></pre>
 <p><code>run_log.json</code> keeps the library versions of each model. Until every model is done, the report opens with &quot;Partial run&quot;.</p>
+<h3 id="the-card-of-a-model">The card of a model</h3>
+<p>A model can state what it is. These keys change no answer: they are copied to <code>run_log.json</code> and to the Models section of the report, which also names the models whose weights are not pinned to a revision.</p>
+<pre><code class="language-yaml">models:
+  - name: medgemma-4b
+    adapter: huggingface
+    id: google/medgemma-4b-it
+    revision: 290cda5eeccbee130f987c4ad74a59ae6f196408
+    family: medical generative
+    license: Health AI Developer Foundations terms
+    gpu: 16 GB
+    validated: &quot;L4, 2026-10-07&quot;      # where and when it last passed vlmshift check
+</code></pre>
 <h3 id="fake-models">Fake models</h3>
 <p><code>fake_generative</code> and <code>fake_contrastive</code> follow a fixed rule and need no GPU. They power the tests, with the tiny dataset of <code>tests/fixtures/toy/</code>, and only know its eight images.</p>
 <h2 id="6-reading-the-answers">6. Reading the answers</h2>
 <p>A generative model writes free text. A reader turns it into <code>yes</code> or <code>no</code>.</p>
+<p><strong>Several answer formats.</strong> To ask the same question with different answer formats, give one list per format and the column that names the format of each row:</p>
+<pre><code class="language-yaml">task:
+  type: yes_no
+  answers_by: answer_format          # a column of the table
+  answer_sets:
+    english_yes_no: {yes: [&quot;yes&quot;], no: [&quot;no&quot;]}
+    numeric_10:     {yes: [&quot;1&quot;],   no: [&quot;0&quot;]}
+    label_ab:       {yes: [&quot;A&quot;],   no: [&quot;B&quot;]}
+</code></pre>
+<p>An answer written in another format than the one asked is <code>INVALID</code>, never a no. A format without a list stops at step 3.</p>
+<p><strong>Negated questions.</strong> For &quot;Is there no nodule?&quot;, keep the label of the finding and name the column that marks the negated rows (<code>1</code> or <code>0</code>): <code>task: {negated: negated}</code>. The results keep what the model said. The analysis counts a yes to a negated question as saying that the finding is absent, so accuracy and the answer change between the plain and the negated question tell whether the model understands the negation. For a contrastive model, the positive sentence of a negated row states the negation.</p>
 <div class="table"><table>
 <thead>
 <tr>
@@ -616,6 +695,10 @@ models:
 <td>Makes a table and two YAML files from a folder of images</td>
 </tr>
 <tr>
+<td><code>vlmshift conditions experiment.yaml --add ...</code></td>
+<td>Writes the table again on changed images, see <a href="#the-same-questions-on-changed-images">section 3</a></td>
+</tr>
+<tr>
 <td><code>vlmshift import experiment.yaml</code></td>
 <td>Step 1: table and checks</td>
 </tr>
@@ -650,6 +733,13 @@ models:
 </tbody>
 </table></div>
 <p>Each command redoes the previous steps if needed and can be run again safely. Each step prints its issues, one line per kind, starting with <code>!</code>.</p>
+<h3 id="in-a-container">In a container</h3>
+<p>The <code>Dockerfile</code> at the root runs the whole tool on your machine, with no account anywhere. Your folder is mounted on <code>/work</code>: the table, the images and the workspace stay on your disk.</p>
+<pre><code class="language-bash">docker build -t vlmshift .                            # with the fake models of the demo
+docker build -t vlmshift --build-arg EXTRAS=local .   # with torch and transformers, for real models
+docker run --rm -v &quot;$PWD:/work&quot; vlmshift all experiment.yaml analysis.yaml
+</code></pre>
+<p>A real model is downloaded from Hugging Face at its first use. To stay offline afterwards, mount the cache (<code>-v ~/.cache/huggingface:/root/.cache/huggingface</code>) and add <code>-e HF_HUB_OFFLINE=1</code>.</p>
 <h2 id="8-describing-an-analysis-analysisyaml">8. Describing an analysis: <code>analysis.yaml</code></h2>
 <p>This file says what to compute on a run. Rerun it as often as you like: it never calls a model.</p>
 <pre><code class="language-yaml">schema_version: 1
@@ -706,6 +796,16 @@ stats:
 <td><code>measures[].split_by</code></td>
 <td>Nothing</td>
 <td>Redo the comparison within each level of these axes</td>
+</tr>
+<tr>
+<td><code>measures[].all_pairs</code></td>
+<td><code>false</code></td>
+<td>Compare every pair of levels, although the axis has a reference</td>
+</tr>
+<tr>
+<td><code>analyses</code></td>
+<td>None</td>
+<td>Further analyses, see <a href="#further-analyses">section 9</a></td>
 </tr>
 <tr>
 <td><code>stats.bootstrap</code></td>
@@ -772,6 +872,26 @@ stats:
 <td>The average of the two</td>
 </tr>
 <tr>
+<td><code>acc</code></td>
+<td>Accuracy</td>
+<td>Among the cases with a known label, how many answers are right?</td>
+</tr>
+<tr>
+<td><code>f1</code>, <code>macro_f1</code></td>
+<td>F1</td>
+<td>F1 of the positives, and the mean of the F1 of the two classes</td>
+</tr>
+<tr>
+<td><code>mcc</code></td>
+<td>Matthews correlation</td>
+<td>From -1 to 1. 0 for a model that always gives the same answer</td>
+</tr>
+<tr>
+<td><code>auroc</code>, <code>auprc</code></td>
+<td>Ranking by the margin</td>
+<td>Contrastive models only: do the margins rank the positives above the negatives?</td>
+</tr>
+<tr>
 <td><code>yes_rate</code></td>
 <td>Yes rate</td>
 <td>How often it says yes, right or wrong</td>
@@ -821,6 +941,7 @@ stats:
 </tbody>
 </table></div>
 <p>A delta is the metric at level b minus the metric at level a. A negative <code>delta_ba</code> means the model does worse at level b.</p>
+<p>Each number comes with what it rests on and where it comes from: <code>n_units</code>, <code>n_samples</code>, <code>n_images</code>, <code>n_valid</code>, <code>n_invalid</code>, then <code>aggregation</code> (what it is averaged over), <code>run</code>, <code>analysis</code> and <code>code_version</code>.</p>
 <h3 id="two-modes">Two modes</h3>
 <p>Each number is computed twice, so an unreadable answer cannot hide a problem:</p>
 <div class="table"><table>
@@ -848,6 +969,102 @@ stats:
 <p>The tool draws <strong>units</strong> at random, with replacement, and recomputes each number 2000 times. It draws units and not rows, because two images of one subject are not independent. This gives an interval around each number.</p>
 <p>A shift is <strong>significant</strong> if its corrected interval does not contain 0. The correction (Bonferroni) accounts for the number of comparisons <code>m</code>. Without it, comparing many levels would produce false alarms. <code>ci_low</code> and <code>ci_high</code> are corrected, and <code>ci95_low</code> and <code>ci95_high</code> are uncorrected and only exploratory.</p>
 <p>A number is <strong>not estimable</strong> when it has nothing to rest on: no positive case, or fewer units than <code>min_units</code>. Each number counts only the units it rests on: a sensitivity counts the units with a positive case, a balanced accuracy the units with a positive case and those with a negative one, whichever are fewer. A cell of 40 units with a single positive image gives a sensitivity on 1 unit, so not estimable. It is shown as such, and never as 0.</p>
+<h3 id="further-analyses">Further analyses</h3>
+<p>The measures say how much the answers shift between two levels. The <code>analyses</code> block answers the questions around that. Each analysis has a <code>type</code>; all write rows with the same columns in <code>analyses.parquet</code>, and the report lists them.</p>
+<pre><code class="language-yaml">analyses:
+  - {type: tests, compare: language, split_by: [site]}
+  - {type: consistency, compare: language}
+  - {type: worst_group, by: [site, language], metric: ba}
+  - {type: interaction, axes: [site, language]}
+</code></pre>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Needs</th>
+<th>What it gives</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tests</code></td>
+<td><code>compare</code> (controlled)</td>
+<td>McNemar between two levels and Cochran's Q over all, on right/wrong and on yes/no, with Holm's correction and the smallest difference the pairs could detect</td>
+</tr>
+<tr>
+<td><code>consistency</code></td>
+<td><code>compare</code> (controlled)</td>
+<td>Share of samples that keep their answer at every level, entropy, accuracy of the majority answer</td>
+</tr>
+<tr>
+<td><code>ranking</code></td>
+<td><code>compare</code></td>
+<td>Kendall's τ between the orders of the models at two levels, the pairs of models that flip, whether the best model changes</td>
+</tr>
+<tr>
+<td><code>worst_group</code></td>
+<td><code>by</code></td>
+<td>Mean over the groups, worst group, mean of the worst share <code>tail</code> (CVaR)</td>
+</tr>
+<tr>
+<td><code>standardized</code></td>
+<td><code>by</code>, <code>over</code></td>
+<td>Accuracy where each level of <code>over</code> and each label weigh the same</td>
+</tr>
+<tr>
+<td><code>parser</code></td>
+<td><code>by</code></td>
+<td>Each answer read whole, then by its first word: a format problem or a wrong answer?</td>
+</tr>
+<tr>
+<td><code>heterogeneity</code></td>
+<td><code>by</code>, <code>over</code></td>
+<td>Spread of a metric between the levels of <code>over</code></td>
+</tr>
+<tr>
+<td><code>pareto</code></td>
+<td><code>by</code>, <code>compare</code></td>
+<td>Models not beaten on mean, worst group and stability together</td>
+</tr>
+<tr>
+<td><code>interaction</code></td>
+<td><code>axes</code> (2 or 3, with references)</td>
+<td>Does the shift on one axis depend on another? Difference of differences, with the main effects</td>
+</tr>
+<tr>
+<td><code>information</code></td>
+<td><code>compare</code></td>
+<td>Mutual information between the answer and the level, in bits</td>
+</tr>
+<tr>
+<td><code>disagreement_shift</code></td>
+<td><code>compare</code>, <code>across</code> (controlled)</td>
+<td>Do two levels disagree more under a condition than at its reference, on the same samples?</td>
+</tr>
+<tr>
+<td><code>taxonomy</code></td>
+<td><code>compare</code>, <code>across</code> (controlled)</td>
+<td>Samples stable across levels, and grounded in the image, or not</td>
+</tr>
+<tr>
+<td><code>regression</code></td>
+<td><code>axes</code>, <code>covariates</code></td>
+<td>Logistic regression of right/wrong, with standard errors by unit</td>
+</tr>
+<tr>
+<td><code>variance</code></td>
+<td><code>axes</code></td>
+<td>Share of the variation of right/wrong that goes with each axis (partial η²)</td>
+</tr>
+<tr>
+<td><code>link</code></td>
+<td><code>target</code>, <code>of</code></td>
+<td>Across models: probe score against the size of an interaction</td>
+</tr>
+</tbody>
+</table></div>
+<p><code>split_by</code> works for all of them; <code>metric</code> chooses <code>acc</code> (default), <code>ba</code>, <code>sens</code>, <code>spec</code>, <code>f1</code>, <code>macro_f1</code>, <code>mcc</code> or <code>yes_rate</code> where a metric is used; <code>all_pairs: true</code> compares every pair of levels.</p>
+<p>The first six are validated on real runs. The others are marked <strong>experimental</strong> in the table and in the report until they are: read them as leads, not as results. The paired tests count each pair as independent: with several images per unit their p-values are too confident, the row says so, and the bootstrap intervals of the measures remain the reference.</p>
 <h2 id="10-the-latent-space-probe">10. The latent space probe</h2>
 <p>The probe asks: can a column, such as the site, be guessed from the way a model represents an image? If so, the model holds this information and might use it.</p>
 <pre><code class="language-yaml">latent:
@@ -863,6 +1080,7 @@ stats:
 │   ├── audit/
 │   │   ├── counts.parquet, .csv      Counts by level
 │   │   ├── samples.parquet, .csv     Variants of each sample
+│   │   ├── columns.parquet, .csv     Empty rows and number of values of each column
 │   │   └── issues.parquet            Issues of step 2
 │   └── variants/&lt;variants&gt;/
 │       ├── variants.parquet, .csv    The exact texts sent to the models
@@ -880,6 +1098,7 @@ stats:
     └── analyses/&lt;analysis&gt;/
         ├── analysis.yaml             Frozen copy
         ├── metrics.parquet           All the numbers
+        ├── analyses.parquet          The further analyses, one row per statistic
         ├── probes.parquet            Probe results
         ├── issues.parquet            Issues of step 5
         └── report/                   What you read
@@ -896,6 +1115,14 @@ stats:
 <tr>
 <td><code>metrics</code></td>
 <td>Every number, with its interval and counts</td>
+</tr>
+<tr>
+<td><code>analyses</code>, <code>analysis_&lt;name&gt;</code></td>
+<td>The further analyses: all together, then one file per analysis</td>
+</tr>
+<tr>
+<td><code>audit_columns</code></td>
+<td>Empty rows and number of values of each column of the dataset</td>
 </tr>
 <tr>
 <td><code>matrix_&lt;measure&gt;</code></td>
@@ -923,10 +1150,34 @@ stats:
 </tr>
 <tr>
 <td><code>issues</code></td>
-<td>Every issue of every step</td>
+<td>Every issue of every step, with local folder paths cut down to file names</td>
 </tr>
 </tbody>
 </table></div>
+<p>Next to the tables:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>report.html</code></td>
+<td>The same report in one page, with the figures. It opens offline and fetches nothing</td>
+</tr>
+<tr>
+<td><code>fig_&lt;measure&gt;_ba</code>, <code>fig_&lt;measure&gt;_shifts</code></td>
+<td>Two figures per measure, as <code>.svg</code> and <code>.pdf</code>. Each cell prints its value and its units</td>
+</tr>
+<tr>
+<td><code>provenance.json</code></td>
+<td>The run, the table, the models and their coverage, the code version and the files of the report</td>
+</tr>
+</tbody>
+</table></div>
+<p>Every report says that it is for research use only. A run made with the fake models is marked <strong>Synthetic run</strong>, in the text and on each figure: its numbers are not results.</p>
 <h2 id="12-issues">12. Issues</h2>
 <p>The tool never fixes a problem silently. It prints it in the terminal, then lists it in <code>issues.csv</code>. An <code>error</code> stops the step, and a <code>warning</code> lets it continue.</p>
 <div class="table"><table>
@@ -1156,10 +1407,12 @@ main()
 <h2 id="15-limits-of-this-version">15. Limits of this version</h2>
 <ul>
 <li><strong>Generative models have not run on an NVIDIA card yet.</strong> SmolVLM-256M ran through the real VLMEvalKit on a processor only, after changing one line of VLMEvalKit for that test. The small LLM is only tested through tiny random models. Contrastive models are tested on the real CLIP. Do a first real run before trusting a generative result.</li>
-<li><strong>One task type</strong>: yes/no questions.</li>
+<li><strong>One task type</strong>: yes/no questions, with any answer format.</li>
+<li><strong>Further analyses</strong>: those marked experimental have run on synthetic and recorded answers, not yet on a full real run.</li>
+<li><strong>Text vectors and token counts</strong> of the prompts are not collected: the analyses of the study that need them (drift of text embeddings between languages, tokenization cost) are not available.</li>
 <li><strong>Long format only</strong>: one row per variant.</li>
 <li><strong>Probe</strong>: contrastive models only, because VLMEvalKit gives no access to the vectors of generative models.</li>
-<li><strong>Med package</strong>: its 11 sources are tested on fake raw folders shaped like the real ones. Only Montgomery has run on the real data, and none of its 10 models on its real weights. Its 35 concepts and their translations are rebuilt, not those of the paper.</li>
+<li><strong>Med package</strong>: its concepts, terms and wordings are those of the paper, and its arms are rebuilt from the evaluation plans of the paper. The recorded answers of two models, replayed, give the frame and term effects of the paper. Its 11 raw sources are tested on fake raw folders shaped like the real ones; only Montgomery has run on the real data, and none of its 10 models on its real weights through this code. The terms are still drafts: no clinician has reviewed them.</li>
 </ul>
 <p>The <a href="design.html">design</a> describes what is planned.</p>
 </main>
