@@ -83,3 +83,16 @@ def test_reference_lists_every_key_the_code_accepts():
         assert f"<code>models[].{key}</code>" in reference, key
     for key in TaskConfig.model_fields:
         assert f"<code>task.{key}" in reference, key
+
+
+def test_example_report_is_a_real_shareable_run():
+    """The report shown on the site comes from real models and names no folder of a machine."""
+    sys.path.insert(0, str(ROOT / "tools" / "site"))
+    import example_report
+    text = (DOCS / "report-example.html").read_text(encoding="utf-8")
+    assert 'href="report-example.html"' in (DOCS / "index.html").read_text(encoding="utf-8")
+    assert "SYNTHETIC" not in text.upper() and not example_report.LOCAL.search(text)
+    assert "<svg" in text and "clip" in text
+    for local in (r"C:\Users\me","D:/data/x.png", "/home/me/x", "/content/images"):
+        assert example_report.LOCAL.search(local), local
+    assert not example_report.LOCAL.search('xmlns="http://www.w3.org/2000/svg"')

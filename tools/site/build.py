@@ -5,7 +5,9 @@
     python tools/site/build.py --home-fragment page.html    also writes the home page without its <html> shell
 
 Tutorial, server guide, Colab guide, documentation and design are written in Markdown, so they also read
-well on GitHub. Here they become pages of the site, with the guide of the Med package (packages/med/README.md). The file guide comes from file_map.py.
+well on GitHub. Here they become pages of the site, with the guide of the Med package (packages/med/README.md)
+and the configuration reference (reference.py). report-example.html is the report of a real demo run, put
+there by example_report.py. The file guide comes from file_map.py.
 """
 import argparse
 import json
