@@ -7,7 +7,7 @@ LIMIT = 10
 
 EXPLAIN = {
     S + "cli.py": dict(
-        goal="The front door. When you type a command such as vlmshift all, this file starts. It computes nothing itself: it starts the steps in the right order and prints where the results are. Each command first redoes the steps before it, so there is nothing to remember between two commands.",
+        goal="The front door. When you type a command such as vlmshift all, this file starts. It computes nothing itself: it starts the steps in the right order and prints where the results are. The conditions command, which writes a table on changed images, is run by data/conditions.py. Each command first redoes the steps before it, so there is nothing to remember between two commands.",
         fn={
             "show_issues": "Prints the issues of a step, one line per kind, so that none stays hidden in a file.",
             "do_init": "Makes the starting files from a folder of images.",
@@ -42,6 +42,7 @@ EXPLAIN = {
             "load_experiment": "Loads experiment.yaml. If the answers are in a separate file, it copies them in.",
             "load_analysis": "Loads analysis.yaml. The command line can replace the run it names.",
             "run_path": "Finds the folder of the run to analyse.",
+            "without_unused": "Leaves out the keys added in later versions while they are unused, so older fingerprints do not move.",
             "config_hash": "Computes the fingerprint of a configuration, ignoring paths.",
         }),
     S + "config/schema.py": dict(
@@ -62,7 +63,7 @@ EXPLAIN = {
         goal="The conductor of step 1. It turns your starting file into a reliable table: reading, standard names, identifiers, checks, then writing. If a serious error exists, it first writes the list of issues, then stops.",
         fn={"build_table": "Runs the whole step and returns the table, its folder and its fingerprint."}),
     S + "data/io.py": dict(
-        goal="Reads the input files, in CSV or Parquet. Everything becomes text, and an empty cell becomes a missing value. All the data is then handled the same way.",
+        goal="Reads the input files, in CSV, Parquet or JSONL. Everything becomes text, and an empty cell becomes a missing value. All the data is then handled the same way.",
         fn={
             "read_file": "Reads one file.",
             "read_table": "Puts several files end to end and notes the folder of each, to find the images.",
@@ -91,10 +92,25 @@ EXPLAIN = {
             "check_axes": "Warns when an axis has one level only: there is nothing to compare.",
         }),
 
+    S + "data/conditions.py": dict(
+        goal="Asks the same questions on changed images, to see what a model really takes from the image. The command vlmshift conditions reads the table of an experiment and writes a larger one, next to the changed images: each row once per condition, with a new column to declare as a controlled axis. A blank or shuffled image removes the evidence; a blur, some noise or a strong JPEG degrades it; an image of another site with the same label changes only where it comes from. The rows of a sample keep their sample_id, so each condition is compared with the original image. Everything is deterministic, and a mask needs boxes drawn by someone: no position is invented.",
+        fn={
+            "parse_conditions": "Reads the conditions asked for: blur gives its five severities, blur:3 one of them.",
+            "open_gray_or_color": "Opens an image in 8 bits, scaling a 16-bit one.",
+            "stable_number": "Gives a number that depends only on its parts, the same on every machine.",
+            "changed": "Applies one condition to one image.",
+            "shuffled": "Gives each image another image of its group, never its own.",
+            "swapped": "Gives each row an image of another site with the same label and concept.",
+            "read_boxes": "Reads the boxes drawn by someone, for the masks.",
+            "relative": "Writes a path relative to the new table when it can.",
+            "write_conditions": "Writes the changed images and the table that asks every question under every condition.",
+            "conditions_command": "Runs the command and prints what to do next.",
+        }),
     S + "audit/counts.py": dict(
-        goal="The conductor of step 2. It counts what the table holds: rows, samples, units and labels, for each level of each axis, then for all axes crossed. It flags what falls under 30 units. It never changes the table.",
+        goal="The conductor of step 2. It counts what the table holds: rows, samples, units and labels, for each level of each axis, then for all axes crossed. It flags what falls under 30 units, a level where one class is almost absent, and the columns with empty rows. It never changes the table.",
         fn={
             "count_cells": "Counts each combination of levels, even an empty one.",
+            "column_table": "Counts, for each column of the dataset, its empty rows and its values.",
             "run_audit": "Runs the step and writes the audit.",
         }),
     S + "audit/samples.py": dict(
@@ -104,7 +120,11 @@ EXPLAIN = {
 
     S + "variants/plan.py": dict(
         goal="The conductor of step 3. It checks that each axis exists, has the texts sent to the models written, then stores the result in a folder named after its fingerprint. Changing the answer lists creates no new variants, because the texts sent stay the same.",
-        fn={"prepare_variants": "Runs the step and returns the variants."}),
+        fn={
+            "check_answer_sets": "With several answer formats, checks that each row names a declared answer list.",
+            "check_negated": "Checks that the negation column says 1 or 0 on every row.",
+            "prepare_variants": "Runs the step and returns the variants.",
+        }),
     S + "variants/prompts.py": dict(
         goal="Writes the exact text each model will receive. The template \"Is there {concept}?\" becomes, for example, \"Is there a circle?\". This text is stored, never recomputed: you can always check what the model read. A row missing a value is excluded and flagged.",
         fn={
@@ -115,8 +135,11 @@ EXPLAIN = {
         goal="Finds the task type from its name. In V1 there is only one: yes_no.",
         fn={"get_task": "Gives the task for a name."}),
     S + "tasks/yes_no.py": dict(
-        goal="Everything specific to yes/no questions. It turns a raw answer such as \"Yes.\" into a yes or no decision, by comparing it to the answer lists. It also says whether a decision is right against the label.",
+        goal="Everything specific to yes/no questions. It turns a raw answer such as \"Yes.\" into a yes or no decision, by comparing it to the answer lists. It also says whether a decision is right against the label, and reads the column that marks negated questions.",
         fn={
+            "negated_rows": "Reads a negation column: negated, not negated, or unclear.",
+            "first_word": "Gives the first word of an answer, for a lenient reading.",
+            "lists_of": "Gives the answer lists that read each row.",
             "is_noise": "Spots punctuation and spaces, in every language.",
             "clean": "Cleans an answer: lower case, no punctuation at the edges.",
             "YesNoTask": "The yes/no task.",
@@ -211,24 +234,75 @@ EXPLAIN = {
         goal="Fake models whose answers follow a fixed rule, to test the tool with no GPU. The fake generative model answers correctly in English; in French it flips two answers, says \"maybe\" once and fails once. The fake contrastive model encodes the site in its vectors on purpose, so the probe can find it. The fake LLM ignores Hindi, also on purpose."),
 
     S + "stats/measures.py": dict(
-        goal="The conductor of step 5. For each model and each measure, it cuts the data into cells, has the metrics and shifts computed, and gathers everything in metrics.parquet. It first checks the rules that need the run, such as an axis that was never declared.",
+        goal="The conductor of step 5. For each model and each measure, it cuts the data into cells, has the metrics and shifts computed, and gathers everything in metrics.parquet. It first checks the rules that need the run, such as an axis that was never declared. It then has the further analyses computed and writes them next to the metrics.",
         fn={
-            "with_unit_codes": "Numbers the units for the computations.",
             "make_rows": "Turns statistics into rows, with intervals and counts.",
-            "support": "Counts the units that really count in a number: those with something to divide by.",
             "base_rows": "Computes the metrics of one cell.",
             "shift_rows": "Computes the shifts between two levels.",
-            "split_cells": "Cuts along split_by, for example by site.",
             "measure_rows": "Handles one measure for one model.",
-            "axis_levels": "Picks the levels and checks that they exist.",
             "check_rules": "Checks consistency with the run.",
             "run_analysis": "Runs the whole step.",
         }),
     S + "stats/pairing.py": dict(
-        goal="Chooses the rows of each comparison. For a controlled axis, it keeps only the samples present at both levels: the same image in EN and FR, face to face. The samples left out are counted.",
+        goal="Chooses the rows of each comparison. For a controlled axis, it keeps only the samples present at both levels: the same image in EN and FR, face to face. The samples left out are counted. It also picks the levels of each axis, cuts the rows into cells and numbers the units, for the measures and the further analyses alike.",
         fn={
             "pairing_keys": "Says what identifies a pair. Nothing for an observed axis.",
             "select": "Keeps the usable rows and counts the excluded pairs.",
+            "with_unit_codes": "Numbers the units for the computations.",
+            "split_cells": "Cuts along split_by, for example by site.",
+            "axis_levels": "Picks the levels and checks that they exist.",
+        }),
+    S + "stats/analyses.py": dict(
+        goal="The conductor of the further analyses, the analyses block of analysis.yaml. The measures say how much the answers shift between two levels. These analyses answer the questions around that: is the shift significant on paired samples, does it depend on another axis, does the order of the models hold, what happens in the worst group. Each analysis has a type; all of them write rows with the same columns in one table, analyses.parquet. Those not yet validated on real runs are marked experimental.",
+        fn={
+            "axes_of": "Lists every axis an analysis names.",
+            "named": "Reads one key of an analysis as a list of axes.",
+            "check_analyses": "Refuses, before any computation, an unknown axis, an observed axis where pairs are needed, or a missing reference.",
+            "sample_keys": "Says what identifies a sample to pair: its id and the controlled axes not compared.",
+            "within": "Keeps the rows at the levels chosen for each axis.",
+            "corrected": "Applies Holm's correction over all the tests of one kind of one model.",
+            "per_model": "Applies a computation to each cell of each model and labels its rows.",
+            "analysis_rows": "Computes one analysis for every model, according to its type.",
+            "run_analyses": "Computes every analysis of the block and gathers them in one table.",
+        }),
+    S + "stats/paired.py": dict(
+        goal="The paired tests on a controlled axis. The same question is asked at each level, so the answers come in pairs. McNemar's test asks whether a model is right more often at one level than at the other. Cochran's Q asks it over all the levels at once. Holm's correction accounts for the number of tests. The file also gives the smallest difference the test could detect with the pairs at hand. These tests count each pair as independent: with several images per unit, the row says that p is too confident.",
+        fn={
+            "mcnemar": "Tests two paired series: exact below 25 discordant pairs, a corrected chi-square above.",
+            "cochran_q": "Tests three levels or more at once.",
+            "holm": "Corrects a list of p-values for their number.",
+            "detectable": "Gives the smallest difference the test would detect with this many pairs.",
+            "wide": "Puts one sample per row and one level per column.",
+            "pair_rows": "Writes the test, the share of discordant pairs and the detectable difference of one pair of levels.",
+            "paired_tests": "Runs the tests of one model in one cell, on right or wrong and on yes or no.",
+            "level_pairs": "Lists the pairs to compare: against the reference, or every pair.",
+        }),
+    S + "stats/effects.py": dict(
+        goal="The effects that need more than two levels at once. An interaction asks whether the shift on one axis depends on the level of another: site and language, wording and term, or image, language and site. The consistency asks whether a sample keeps its answer at every level. The information measures how much the answer tells about the level. Two grounding analyses use an image control: do two languages disagree more on a degraded image, and is a sample stable because the model reads the image or because it ignores it. Every rate is a mean over samples, recomputed on each draw of units."),
+    S + "stats/robustness.py": dict(
+        goal="How a model holds across groups such as a site, a language or a concept. It compares numbers computed group by group: whether the order of the models changes between two levels, the worst group and the mean of the worst ones, an accuracy where each concept and each label weigh the same, the spread between concepts, and which models are not beaten on mean, worst group and stability together. These numbers describe: they carry no interval, and a group with too few units is left out.",
+        fn={
+            "point": "Computes a metric on the valid answers of some rows.",
+            "group_values": "Computes the metric of each group.",
+            "ranking_rows": "Compares the order of the models between two levels: Kendall's tau, flips, best model.",
+            "worst_group_rows": "Gives the mean, the worst group and the mean of the worst ones.",
+            "standardized_rows": "Gives an accuracy where each concept and each label weigh the same.",
+            "heterogeneity_rows": "Measures how much a metric varies between the levels of an axis.",
+            "stability": "Gives the share of samples that keep their answer at every level.",
+            "pareto_rows": "Finds the models not beaten on mean, worst group and stability together.",
+            "parser_rows": "Reads each answer whole, then by its first word, and compares the two.",
+            "link_rows": "Relates, across models, the probe score to the size of an interaction.",
+        }),
+    S + "stats/regression.py": dict(
+        goal="Two models of whether an answer is right. The regression is logistic, on the levels of some axes and their interaction; the answers of one unit are not independent, so the standard errors are computed by unit. The variance split says how much of the variation goes with each axis once the others are counted. Both are written with numpy alone. A model that cannot be fitted says why and gives no number.",
+        fn={
+            "right_or_wrong": "Keeps the valid answers with a known label and marks them right or wrong.",
+            "dummies": "Turns an axis into 0/1 columns, one per level but the reference.",
+            "design": "Builds the columns of each term: the axes, their interaction, the covariates.",
+            "fit_logistic": "Fits the logistic regression by Newton's method.",
+            "regression_rows": "Gives each coefficient with an interval and a p-value computed by unit.",
+            "residual": "Gives the squared error of a least-squares fit and its rank.",
+            "variance_rows": "Gives the share of variation that goes with each axis.",
         }),
     S + "stats/shifts.py": dict(
         goal="Computes the shift metrics: what changes between two levels. The shift Δ is the metric at level b minus the metric at level a. The answer change is the share of samples whose decision flips, from yes to no or from no to yes.",
@@ -245,24 +319,50 @@ EXPLAIN = {
             "run_probes": "Runs the probe for each model and each column.",
         }),
     S + "stats/metrics.py": dict(
-        goal="Defines the base metrics: sensitivity (Sens), specificity (Spec), balanced accuracy (BA), yes rate and INVALID rate, and the answer-change rates. All are ratios of counts. These counts are kept per unit, which makes the bootstrap very fast. A division by zero gives \"not estimable\", never 0.",
+        goal="Defines the base metrics: sensitivity (Sens), specificity (Spec), balanced accuracy (BA), accuracy, F1, macro F1, Matthews correlation (MCC), yes rate and INVALID rate, and the answer-change rates. All are computed from counts. These counts are kept per unit, which makes the bootstrap very fast. A division by zero gives \"not estimable\", never 0.",
         fn={
             "rate": "Divides two numbers, never inventing a 0.",
             "counter": "Prepares a counter of rows per unit.",
             "unit_sums": "Counts, per unit, the right answers and the useful rows.",
+            "f1_of": "Computes the F1 of one class from its hits, its cases and the answers naming it.",
+            "f1": "Computes the F1 of the positive class.",
+            "macro_f1": "Averages the F1 of the two classes, so that both weigh the same.",
+            "mcc": "Computes the Matthews correlation: 0 for a model that always gives the same answer.",
+            "support": "Counts the units that really count in a number: those with something to divide by.",
             "weigh": "Adds up these counts according to a draw.",
             "stat_of": "Prepares the computation of a metric or a change rate.",
+        }),
+    S + "stats/scores.py": dict(
+        goal="The metrics that read a continuous score instead of a yes or a no. A contrastive model gives a margin for each question: the score of the positive phrase minus that of the negative one. AUROC and AUPRC ask whether these margins rank the positive cases above the negative ones, whatever the threshold. They only use the order of the margins, which are not probabilities. Like every other number, they are recomputed on each draw of units.",
+        fn={
+            "by_chunks": "Computes a statistic on a few draws at a time, to bound the memory.",
+            "ties": "Finds, in sorted scores, where each group of equal scores starts and ends.",
+            "auroc_stat": "Prepares the AUROC: the chance that a positive case outranks a negative one.",
+            "auprc_stat": "Prepares the average precision over all margin thresholds.",
+            "score_stats": "Gives the score metrics of some rows, with the units they rest on.",
+            "score_shifts": "Gives the shift of each score metric between two levels.",
         }),
     S + "stats/bootstrap.py": dict(
         goal="Measures the uncertainty of each number. The idea: draw the units at random, with replacement, 2000 times by default, and see how the number varies. It draws units and not rows, because two images of the same subject are not independent. A shift is significant if its corrected interval does not contain 0.",
         fn={
             "draw_weights": "Makes the draws: how many times each unit is drawn.",
             "summarize": "Computes the value, the intervals and the significance.",
+            "estimate": "Gives a statistic with its intervals, or not estimable with too few units.",
         }),
 
     S + "report/export.py": dict(
         goal="The conductor of step 6. It reads back the outputs of the previous steps and produces the report: tables in CSV and Parquet, one matrix per measure, and the report.md summary. It redoes no statistics. It only adds the coverage, in total and by level, and the share of decisions made by the small LLM. The summary tells the main shifts in plain sentences, names the levels where most answers cannot be used, and says so when nothing could be tested. A value that cannot be computed shows as \"not estimable\", and a partial run says so at the top."),
 
+    S + "report/figures.py": dict(
+        goal="Draws the figures of the report without any plotting library: a heatmap of balanced accuracy by level, and the shifts of each measure with their corrected intervals. Each figure is written twice, as SVG and as PDF, from the same list of rectangles, lines and texts. Every cell prints its value and its number of units, so the color never carries the meaning alone. A run made with the fake models of the tests is stamped as synthetic on the figure itself."),
+    S + "report/html.py": dict(
+        goal="Writes report.html: the same report as report.md, in one page that opens in any browser. The page holds its style and its figures, and fetches nothing from the network, so it can be read offline and sent as it is. It follows the light or dark setting of the reader and can be used with the keyboard.",
+        fn={
+            "slug": "Turns a section title into the name of a link.",
+            "inline": "Shows bold and code inside a line.",
+            "body_of": "Turns the text of report.md into HTML and lists its sections.",
+            "render_html": "Builds the page: contents, report and figures.",
+        }),
     M + "run.sh": dict(
         goal="Runs the whole Med benchmark with one command: it checks that everything is ready, prepares the 11 sources, then runs paper.py, which runs the models through Core and writes the tables of the paper. It stops at the first error."),
     M + "check.py": dict(
@@ -294,16 +394,61 @@ EXPLAIN = {
             "votes": "RICORD only: the classes the radiologists gave to each study, from the MD.ai export.",
         }),
     M + "label_rules/<source>.py": dict(
-        goal="Each source codes its labels in its own way: a column of findings, one column per device, the folder of an image, the end of its name, the vote of several radiologists. Each rule turns that code into positive, negative or unknown, concept by concept. Only what the source states becomes a negative: a finding that is not mentioned stays unknown, and unknown is never asked.",
+        goal="Each source codes its labels in its own way: a column of findings, one column per device, the folder of an image, the end of its name, the vote of several radiologists. Each rule turns that code into positive, negative or unknown, concept by concept. The concepts are those of the paper, and each rule follows the label policy the paper gives to its source: classes that exclude each other give a negative for the other classes, the 14 findings of NIH are read as exhaustive, a source that only shows positives gives no negative. What a source does not state stays unknown, and unknown is never asked.",
         fn={"labels": "Gives the label of each concept the source states, for one image."}),
     M + "prepare/template.py": dict(
         goal="The script to copy for a new source. It reads a raw file and turns it into the table every source gives, with its card. It is not a source: python -m prepare skips it.",
         fn={"prepare": "Reads the raw file and builds the table."}),
     M + "label_rules/template.py": dict(
-        goal="The label rule to copy for a new source. Doubt and empty values become unknown, never negative.",
-        fn={"to_label": "Translates a raw value into a label."}),
+        goal="The label rule to copy for a new source. Doubt and empty values become unknown, never negative. It also holds the rule shared by the sources whose classes exclude each other, such as normal or tuberculosis.",
+        fn={
+            "to_label": "Translates a raw value into a label.",
+            "one_class": "For classes that exclude each other: positive for the class of the image, negative for the others.",
+        }),
     M + "prepare/common.py": dict(
         goal="The tools shared by the sources. It finds the images of a source wherever its archive put them, extracts a zip once, and turns DICOM images into PNG. It then keeps the positives and negatives, draws 300 patients per source with one image each, half of them ill when there are enough, adds one row per language with the texts of questions.yaml, and writes the table in the format Core expects."),
+    M + "bank.py": dict(
+        goal="The concept bank of the paper. Every text sent to a model comes from here: the 35 concepts in 7 languages and the wordings of configs/questions.yaml, and the Hindi, Chinese and Arabic questions in Latin letters of configs/romanized.yaml. None of it is reconstructed: a test rebuilds the prompts of the October 2026 runs from these files. The module also guards a rule of the design: while a term has not been reviewed by a clinician, an official run is refused, and a run asked for anyway says in its report that its terms are drafts.",
+        fn={
+            "load_bank": "Reads configs/questions.yaml.",
+            "load_romanized": "Reads configs/romanized.yaml.",
+            "question": "Writes the question about a concept in a language, a wording and an answer format.",
+            "pair": "Writes the two sentences a contrastive model compares, turned around for a negated question.",
+            "romanized": "Gives the question and the pair of a concept in Latin letters.",
+            "answer_sets": "Gives the answers accepted for each answer format.",
+            "unvalidated": "Lists the concepts whose terms no clinician has reviewed.",
+            "draft_notice": "Writes what a report must say while some terms are drafts.",
+            "gate": "Refuses a run on draft terms unless it was asked for.",
+        }),
+    M + "plans.py": dict(
+        goal="Rebuilds the experiments of the paper from its evaluation plans, the lists of what the study sent to the models. The plans name patients and images of sources that cannot be shared again, so they stay out of the repository: you copy them to data/paper/. The script writes one experiment per arm of configs/arms.yaml: the main questions in 7 languages, the answer formats, the negation, the image controls, the degraded images, sentence and term in different languages, a concept that is not that of the image, and Latin letters. Each text is written again from the bank and compared with the plan: one difference stops everything, so a table that is written holds exactly the questions of the paper. All arms share one workspace: a question asked in one arm is not asked again in another.",
+        fn={
+            "read_plans": "Reads the plans of a folder; the supplementary one is optional.",
+            "texts_of": "Writes the question and the pair of a row again, from the bank.",
+            "check_texts": "Stops if a text of the plan is not the one the bank writes.",
+            "local_images": "Replaces the image folders of the study by those of this machine.",
+            "as_table": "Gives the rows of a plan the columns of Core, with the label of the finding.",
+            "arm_rows": "Picks the rows of the plans that make an arm.",
+            "arm_table": "Builds the table of an arm, each row once.",
+            "arm_configs": "Writes experiment.yaml and analysis.yaml of an arm.",
+            "write_arms": "Writes every arm the plans hold.",
+        }),
+    M + "replay.py": dict(
+        goal="Computes the numbers of the paper again without any model. The study kept every answer of every model. This script puts those answers where a run of Core would have written them, then runs the analysis and the report on them. It needs neither the images nor a GPU, so the images are identified by their path and the report says that it is a replay. It is also how the analysis is checked: replayed on the recorded answers, it gives the frame and term effects of the paper.",
+        fn={
+            "table_without_images": "Writes the table of step 1 without opening any image.",
+            "recorded": "Reads every recorded answer of a folder, with the columns of the arm tables.",
+            "results_of": "Turns recorded answers into the results table of Core.",
+            "replay": "Writes the run of an arm from recorded answers.",
+            "main": "Replays the arms named on the command line and writes their reports.",
+        }),
+    M + "audits.py": dict(
+        goal="Two audits of the paper that are about chest X-ray data. The first asks whether a model does better in the language of the country where the images were acquired: Spanish for the Spanish source, Chinese for the Chinese ones. It reads a measure already computed and computes nothing again. The second looks at the annotated workbook, which has one text column per language: when a language has more distinct texts than English for the same concept, its column carries details of each report. That is why the questions of the paper use the short terms of the bank, never these columns.",
+        fn={
+            "congruence": "Gives the shifts from English to the local language, on the images of each country that has one.",
+            "semantic_audit": "Counts, for each source and concept, the distinct texts of each language column.",
+            "main": "Runs one of the two audits from the command line.",
+        }),
     M + "paper.py": dict(
         goal="Runs the models through Core, then writes the tables of the paper from the run. A cell is a source and a concept. Only the cells where every model has an answer in every language are kept: the complete-case rule. An unreadable answer counts as wrong. The gap of each language with English comes with a 95% interval from 10,000 paired draws of model and cell pairs.",
         fn={
@@ -382,6 +527,7 @@ BLOCKS = {
         items={
             "counts.parquet, .csv": "The counts by level and by crossing of axes. The CSV opens in a spreadsheet.",
             "samples.parquet, .csv": "One row per sample: its variants and its missing levels.",
+            "columns.parquet, .csv": "One row per column of the dataset: its empty rows and its number of values.",
             "issues.parquet": "What falls under the threshold of 30 units.",
         },
         cols=[("WRITTEN BY", [(COUNTS, "run_audit")]), ("READ BACK BY", [(EXPORT, "load_inputs")])]),
@@ -445,6 +591,7 @@ BLOCKS = {
         items={
             "analysis.yaml (copy)": "The analysis configuration, frozen.",
             "metrics.parquet": "One row per number, with intervals and counts.",
+            "analyses.parquet": "The further analyses: one row per statistic, all with the same columns.",
             "probes.parquet": "The results of the probe.",
             "issues.parquet": "The issues of step 5, such as a model that always gives the same answer.",
         },
@@ -461,7 +608,9 @@ BLOCKS = {
     (6, "writes"): dict(
         goal="The final result, the part you read. Each table exists in CSV and in Parquet.",
         items={
-            "report.md": "The readable report, in six sections, opening on the main shifts in plain sentences.",
+            "report.md, report.html": "The readable report, opening on the main shifts in plain sentences. The HTML page also shows the figures.",
+            "provenance.json": "Which run, table, models, code version and files the report comes from.",
+            "fig_<measure>_ba, _shifts": "Two figures per measure, each as SVG and as PDF.",
             "metrics": "All the numbers, with a column already formatted.",
             "probes": "The results of the probe.",
             "coverage": "Per model: rows planned, valid, INVALID, failed and missing.",
@@ -470,6 +619,7 @@ BLOCKS = {
             "reader_share": "The share of decisions made by the small LLM.",
             "reader_validation": "Its accuracy by language.",
             "matrix_<measure>": "One measure as a cross table, cell by cell.",
+            "analyses, analysis_<name>": "The further analyses: all together, then one file per analysis.",
         },
         cols=[("WRITTEN BY", [(EXPORT, "write_report")])]),
     (7, "reads"): dict(
@@ -477,7 +627,9 @@ BLOCKS = {
         items={
             "<source>/": "The raw files of a source, as it gives them: a label file, folders of images, or archives kept as they are.",
             "converted/": "The DICOM images of RICORD and JSRT, written once as PNG.",
-            "questions.yaml": "The 35 concepts in 7 languages, with their RadLex identifier, and one wording per language.",
+            "arms.yaml": "The arms of the paper: the axes, the task and the analyses of each.",
+            "data/paper/": "Not in the repository: the evaluation plans and the recorded answers of the study, copied from its drive.",
+            "questions.yaml, romanized.yaml": "The 35 concepts of the paper in 7 languages, with their RadLex identifier, their validation status and every wording; and the questions in Latin letters.",
             "experiment.yaml, analysis.yaml": "The configurations of the benchmark: 11 tables, 10 models, English as reference.",
         },
         cols=[("READ BY", [(M + "prepare/<source>.py", "RAW"), (M + "prepare/common.py", "questions.yaml"), (M + "check.py", "experiment.yaml")])]),

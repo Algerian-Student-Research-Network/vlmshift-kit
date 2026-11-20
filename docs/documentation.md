@@ -54,7 +54,7 @@ VLMShift turns this into numbers:
 
 ## 3. Your data
 
-Your data is one table, in CSV or Parquet, with **one row per variant**. Column names are free: `roles` says which column plays which part.
+Your data is one table, in CSV, Parquet or JSONL (one row per line), with **one row per variant**. Column names are free: `roles` says which column plays which part.
 
 ### Start from a folder of images
 
@@ -99,6 +99,28 @@ Good to know:
 - **Numeric column as an axis**: an observed axis with more than 4 values, such as an age, is cut into four quartiles, in the audit, the coverage and the measures. Each one is named by its rank then its interval, such as `Q1 (4.999, 16.25]`: write that name to choose it as `reference`. A controlled axis keeps its own levels.
 - **Several files**: `data` can be a list. The files are put end to end and must have the same columns: the import stops otherwise.
 - **CSV from a spreadsheet**: commas, or semicolons as written by a spreadsheet set to French; UTF-8, or Windows-1252 as written by Excel. The first line tells the separator.
+
+### The same questions on changed images
+
+To see what a model really takes from the image, ask the same questions on a changed image:
+
+```bash
+vlmshift conditions experiment.yaml --add blank shuffled blur noise:3 --within site
+```
+
+This writes a larger table in `conditions/`, next to the changed images: each row once per condition, with a new column, `image_condition`, whose original level is `real`. Point `data:` to that table, declare `image_condition: {type: controlled}`, and give it the reference `real` in `analysis.yaml`. The rows of one sample keep their `sample_id`, so each condition is compared with the original image on the same questions.
+
+| Condition | What it does |
+|---|---|
+| `blank` | A gray image of the same size: no evidence at all |
+| `shuffled` | The image of another sample, inside each group of `--within` |
+| `border_cropped` | 5% cut on each side, then scaled back: the edges often carry the marks of a site |
+| `contrast_standardized` | The full range of gray used |
+| `blur`, `noise`, `jpeg`, `brightness`, `contrast`, `downsample` | Five severities each. `blur` gives the five, `blur:3` one |
+| `same_label_swap` | An image of another level of `--across` (another site) with the same label and the same `--same` columns (the concept) |
+| `mask:<type>` | The boxes of that type in `--boxes` (a CSV: `image, box_type, x1, y1, x2, y2`) filled with the median gray |
+
+The same table and the same `--seed` give the same files. A mask needs boxes drawn by someone: no position is invented, and a row without a box is left out and counted.
 
 ### What is checked at import
 
@@ -160,6 +182,8 @@ All paths are relative to the YAML file. An unknown key is an error, so a typo n
 | `task.type` | Yes | | `yes_no`, the only type for now |
 | `task.template` | No | Question column | Text with `{column}` holes |
 | `task.answers` | No | See [section 6](#6-reading-the-answers) | Accepted words, or a path to a YAML file with the same shape |
+| `task.answer_sets`, `task.answers_by` | No | None | One answer list per format, and the column that names the format of each row |
+| `task.negated` | No | None | The column that marks negated questions |
 | `task.reader_llm` | No | None | Small model that reads answers |
 | `task.contrastive` | For contrastive models without sentence columns | None | `positive_template` and `negative_template` |
 | `models` | Yes | | See [section 5](#5-models) |
@@ -285,6 +309,22 @@ vlmshift run experiment.yaml --only model-b
 
 `run_log.json` keeps the library versions of each model. Until every model is done, the report opens with "Partial run".
 
+### The card of a model
+
+A model can state what it is. These keys change no answer: they are copied to `run_log.json` and to the Models section of the report, which also names the models whose weights are not pinned to a revision.
+
+```yaml
+models:
+  - name: medgemma-4b
+    adapter: huggingface
+    id: google/medgemma-4b-it
+    revision: 290cda5eeccbee130f987c4ad74a59ae6f196408
+    family: medical generative
+    license: Health AI Developer Foundations terms
+    gpu: 16 GB
+    validated: "L4, 2026-10-07"      # where and when it last passed vlmshift check
+```
+
 ### Fake models
 
 `fake_generative` and `fake_contrastive` follow a fixed rule and need no GPU. They power the tests, with the tiny dataset of `tests/fixtures/toy/`, and only know its eight images.
@@ -292,6 +332,22 @@ vlmshift run experiment.yaml --only model-b
 ## 6. Reading the answers
 
 A generative model writes free text. A reader turns it into `yes` or `no`.
+
+**Several answer formats.** To ask the same question with different answer formats, give one list per format and the column that names the format of each row:
+
+```yaml
+task:
+  type: yes_no
+  answers_by: answer_format          # a column of the table
+  answer_sets:
+    english_yes_no: {yes: ["yes"], no: ["no"]}
+    numeric_10:     {yes: ["1"],   no: ["0"]}
+    label_ab:       {yes: ["A"],   no: ["B"]}
+```
+
+An answer written in another format than the one asked is `INVALID`, never a no. A format without a list stops at step 3.
+
+**Negated questions.** For "Is there no nodule?", keep the label of the finding and name the column that marks the negated rows (`1` or `0`): `task: {negated: negated}`. The results keep what the model said. The analysis counts a yes to a negated question as saying that the finding is absent, so accuracy and the answer change between the plain and the negated question tell whether the model understands the negation. For a contrastive model, the positive sentence of a negated row states the negation.
 
 | You declare | How answers are read |
 |---|---|
@@ -334,6 +390,7 @@ Raw answers are stored, so changing the reader does not call the models again.
 | Command | What it does |
 |---|---|
 | `vlmshift init <folder> --question LEVEL=text ...` | Makes a table and two YAML files from a folder of images |
+| `vlmshift conditions experiment.yaml --add ...` | Writes the table again on changed images, see [section 3](#the-same-questions-on-changed-images) |
 | `vlmshift import experiment.yaml` | Step 1: table and checks |
 | `vlmshift audit experiment.yaml` | Steps 1 and 2: prints the counts, no model needed |
 | `vlmshift prepare experiment.yaml` | Steps 1 to 3: exact texts, no model needed |
@@ -344,6 +401,18 @@ Raw answers are stored, so changing the reader does not call the models again.
 | `vlmshift all experiment.yaml analysis.yaml` | Everything |
 
 Each command redoes the previous steps if needed and can be run again safely. Each step prints its issues, one line per kind, starting with `!`.
+
+### In a container
+
+The `Dockerfile` at the root runs the whole tool on your machine, with no account anywhere. Your folder is mounted on `/work`: the table, the images and the workspace stay on your disk.
+
+```bash
+docker build -t vlmshift .                            # with the fake models of the demo
+docker build -t vlmshift --build-arg EXTRAS=local .   # with torch and transformers, for real models
+docker run --rm -v "$PWD:/work" vlmshift all experiment.yaml analysis.yaml
+```
+
+A real model is downloaded from Hugging Face at its first use. To stay offline afterwards, mount the cache (`-v ~/.cache/huggingface:/root/.cache/huggingface`) and add `-e HF_HUB_OFFLINE=1`.
 
 ## 8. Describing an analysis: `analysis.yaml`
 
@@ -376,6 +445,8 @@ stats:
 | `measures` | One per axis | The comparisons you want |
 | `measures[].compare` | Required | The axis to compare |
 | `measures[].split_by` | Nothing | Redo the comparison within each level of these axes |
+| `measures[].all_pairs` | `false` | Compare every pair of levels, although the axis has a reference |
+| `analyses` | None | Further analyses, see [section 9](#further-analyses) |
 | `stats.bootstrap` | `2000` | Number of random draws, at least 100 |
 | `stats.alpha` | `0.05` | Risk accepted for significance |
 | `stats.seed` | `0` | Same seed, same numbers |
@@ -395,6 +466,10 @@ A cell is one level, or one combination of levels.
 | `sens` | Sensitivity | Among real positives, how many does the model find? |
 | `spec` | Specificity | Among real negatives, how many does it recognise? |
 | `ba` | Balanced accuracy | The average of the two |
+| `acc` | Accuracy | Among the cases with a known label, how many answers are right? |
+| `f1`, `macro_f1` | F1 | F1 of the positives, and the mean of the F1 of the two classes |
+| `mcc` | Matthews correlation | From -1 to 1. 0 for a model that always gives the same answer |
+| `auroc`, `auprc` | Ranking by the margin | Contrastive models only: do the margins rank the positives above the negatives? |
 | `yes_rate` | Yes rate | How often it says yes, right or wrong |
 | `inv_rate` | INVALID rate | How often its answer cannot be read |
 
@@ -408,6 +483,8 @@ A cell is one level, or one combination of levels.
 | `chg` (`chg_yes_no`, `chg_no_yes`) | Does it change its mind on the same samples? | No | Controlled axes |
 
 A delta is the metric at level b minus the metric at level a. A negative `delta_ba` means the model does worse at level b.
+
+Each number comes with what it rests on and where it comes from: `n_units`, `n_samples`, `n_images`, `n_valid`, `n_invalid`, then `aggregation` (what it is averaged over), `run`, `analysis` and `code_version`.
 
 ### Two modes
 
@@ -432,6 +509,40 @@ A shift is **significant** if its corrected interval does not contain 0. The cor
 
 A number is **not estimable** when it has nothing to rest on: no positive case, or fewer units than `min_units`. Each number counts only the units it rests on: a sensitivity counts the units with a positive case, a balanced accuracy the units with a positive case and those with a negative one, whichever are fewer. A cell of 40 units with a single positive image gives a sensitivity on 1 unit, so not estimable. It is shown as such, and never as 0.
 
+### Further analyses
+
+The measures say how much the answers shift between two levels. The `analyses` block answers the questions around that. Each analysis has a `type`; all write rows with the same columns in `analyses.parquet`, and the report lists them.
+
+```yaml
+analyses:
+  - {type: tests, compare: language, split_by: [site]}
+  - {type: consistency, compare: language}
+  - {type: worst_group, by: [site, language], metric: ba}
+  - {type: interaction, axes: [site, language]}
+```
+
+| Type | Needs | What it gives |
+|---|---|---|
+| `tests` | `compare` (controlled) | McNemar between two levels and Cochran's Q over all, on right/wrong and on yes/no, with Holm's correction and the smallest difference the pairs could detect |
+| `consistency` | `compare` (controlled) | Share of samples that keep their answer at every level, entropy, accuracy of the majority answer |
+| `ranking` | `compare` | Kendall's τ between the orders of the models at two levels, the pairs of models that flip, whether the best model changes |
+| `worst_group` | `by` | Mean over the groups, worst group, mean of the worst share `tail` (CVaR) |
+| `standardized` | `by`, `over` | Accuracy where each level of `over` and each label weigh the same |
+| `parser` | `by` | Each answer read whole, then by its first word: a format problem or a wrong answer? |
+| `heterogeneity` | `by`, `over` | Spread of a metric between the levels of `over` |
+| `pareto` | `by`, `compare` | Models not beaten on mean, worst group and stability together |
+| `interaction` | `axes` (2 or 3, with references) | Does the shift on one axis depend on another? Difference of differences, with the main effects |
+| `information` | `compare` | Mutual information between the answer and the level, in bits |
+| `disagreement_shift` | `compare`, `across` (controlled) | Do two levels disagree more under a condition than at its reference, on the same samples? |
+| `taxonomy` | `compare`, `across` (controlled) | Samples stable across levels, and grounded in the image, or not |
+| `regression` | `axes`, `covariates` | Logistic regression of right/wrong, with standard errors by unit |
+| `variance` | `axes` | Share of the variation of right/wrong that goes with each axis (partial η²) |
+| `link` | `target`, `of` | Across models: probe score against the size of an interaction |
+
+`split_by` works for all of them; `metric` chooses `acc` (default), `ba`, `sens`, `spec`, `f1`, `macro_f1`, `mcc` or `yes_rate` where a metric is used; `all_pairs: true` compares every pair of levels.
+
+The first six are validated on real runs. The others are marked **experimental** in the table and in the report until they are: read them as leads, not as results. The paired tests count each pair as independent: with several images per unit their p-values are too confident, the row says so, and the bootstrap intervals of the measures remain the reference.
+
 ## 10. The latent space probe
 
 The probe asks: can a column, such as the site, be guessed from the way a model represents an image? If so, the model holds this information and might use it.
@@ -454,6 +565,7 @@ workspace/
 │   ├── audit/
 │   │   ├── counts.parquet, .csv      Counts by level
 │   │   ├── samples.parquet, .csv     Variants of each sample
+│   │   ├── columns.parquet, .csv     Empty rows and number of values of each column
 │   │   └── issues.parquet            Issues of step 2
 │   └── variants/<variants>/
 │       ├── variants.parquet, .csv    The exact texts sent to the models
@@ -471,6 +583,7 @@ workspace/
     └── analyses/<analysis>/
         ├── analysis.yaml             Frozen copy
         ├── metrics.parquet           All the numbers
+        ├── analyses.parquet          The further analyses, one row per statistic
         ├── probes.parquet            Probe results
         ├── issues.parquet            Issues of step 5
         └── report/                   What you read
@@ -481,13 +594,25 @@ The summary of `report.md` gives the main significant shifts in plain sentences,
 | Table | Content |
 |---|---|
 | `metrics` | Every number, with its interval and counts |
+| `analyses`, `analysis_<name>` | The further analyses: all together, then one file per analysis |
+| `audit_columns` | Empty rows and number of values of each column of the dataset |
 | `matrix_<measure>` | One measure as a cross table, ready to read |
 | `coverage` | For each model, in total and by level of each axis: rows expected, valid, INVALID, failed, missing |
 | `audit_counts` | The counts of step 2 |
 | `probes` | Probe results |
 | `reader_share` | Share of decisions made by the small LLM |
 | `reader_validation` | Its accuracy by language |
-| `issues` | Every issue of every step |
+| `issues` | Every issue of every step, with local folder paths cut down to file names |
+
+Next to the tables:
+
+| File | Content |
+|---|---|
+| `report.html` | The same report in one page, with the figures. It opens offline and fetches nothing |
+| `fig_<measure>_ba`, `fig_<measure>_shifts` | Two figures per measure, as `.svg` and `.pdf`. Each cell prints its value and its units |
+| `provenance.json` | The run, the table, the models and their coverage, the code version and the files of the report |
+
+Every report says that it is for research use only. A run made with the fake models is marked **Synthetic run**, in the text and on each figure: its numbers are not results.
 
 ## 12. Issues
 
@@ -588,9 +713,11 @@ python tools/site/build.py
 ## 15. Limits of this version
 
 - **Generative models have not run on an NVIDIA card yet.** SmolVLM-256M ran through the real VLMEvalKit on a processor only, after changing one line of VLMEvalKit for that test. The small LLM is only tested through tiny random models. Contrastive models are tested on the real CLIP. Do a first real run before trusting a generative result.
-- **One task type**: yes/no questions.
+- **One task type**: yes/no questions, with any answer format.
+- **Further analyses**: those marked experimental have run on synthetic and recorded answers, not yet on a full real run.
+- **Text vectors and token counts** of the prompts are not collected: the analyses of the study that need them (drift of text embeddings between languages, tokenization cost) are not available.
 - **Long format only**: one row per variant.
 - **Probe**: contrastive models only, because VLMEvalKit gives no access to the vectors of generative models.
-- **Med package**: its 11 sources are tested on fake raw folders shaped like the real ones. Only Montgomery has run on the real data, and none of its 10 models on its real weights. Its 35 concepts and their translations are rebuilt, not those of the paper.
+- **Med package**: its concepts, terms and wordings are those of the paper, and its arms are rebuilt from the evaluation plans of the paper. The recorded answers of two models, replayed, give the frame and term effects of the paper. Its 11 raw sources are tested on fake raw folders shaped like the real ones; only Montgomery has run on the real data, and none of its 10 models on its real weights through this code. The terms are still drafts: no clinician has reviewed them.
 
 The [design](design.md) describes what is planned.

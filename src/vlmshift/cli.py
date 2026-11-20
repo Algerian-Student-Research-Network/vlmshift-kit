@@ -1,4 +1,4 @@
-"""Command line: init, import, audit, prepare, check, run, analyze, all.
+"""Command line: init, conditions, import, audit, prepare, check, run, analyze, all.
 
 Each command redoes the previous ones if needed. They are safe to run again: same
 content, same fingerprint, same folder. No hidden state to keep between two commands.
@@ -15,6 +15,7 @@ import pandas as pd
 from .audit.counts import run_audit
 from .common import Step, VLMShiftError
 from .config.load import load_analysis, load_experiment
+from .data.conditions import conditions_command
 from .data.starter import parse_questions, write_starter
 from .data.table import build_table
 from .inference.check import check_models
@@ -118,6 +119,21 @@ def parser() -> argparse.ArgumentParser:
             "--only", nargs="+", metavar="MODEL", help="only these models (useful if they have different environments)"
         )
     commands.choices["analyze"].add_argument("--run", help="run folder: replaces the run key of analysis.yaml")
+    changes = commands.add_parser(
+        "conditions", help="write the same questions on changed images: blank, shuffled, blurred...",
+        description="Write the table of an experiment again with each image under several conditions.",
+    )
+    changes.add_argument("experiment")
+    changes.add_argument("--add", nargs="+", required=True, metavar="CONDITION",
+                         help="blank, shuffled, border_cropped, contrast_standardized, same_label_swap, mask:<box type>, "
+                              "or blur, noise, jpeg, brightness, contrast, downsample (all five severities, or blur:3 for one)")
+    changes.add_argument("--out", help="folder for the table and the images (default: conditions/ next to experiment.yaml)")
+    changes.add_argument("--axis", default="image_condition", help="name of the new column (default: image_condition)")
+    changes.add_argument("--seed", type=int, default=0, help="for shuffled, same_label_swap and noise (default: 0)")
+    changes.add_argument("--within", nargs="+", metavar="COLUMN", help="shuffled: exchange the images inside each group of these columns")
+    changes.add_argument("--across", metavar="COLUMN", help="same_label_swap: the column whose level must change, such as the site")
+    changes.add_argument("--same", nargs="+", metavar="COLUMN", help="same_label_swap: columns that must stay the same, such as the concept")
+    changes.add_argument("--boxes", help="mask:<box type>: a CSV with the columns image, box_type, x1, y1, x2, y2")
     commands.choices["all"].add_argument("analysis")
     return main_parser
 
@@ -134,6 +150,8 @@ def main(argv: list[str] | None = None) -> None:
             steps[args.command](load_experiment(args.experiment))
         elif args.command == "audit":
             do_audit(load_experiment(args.experiment), show=True)
+        elif args.command == "conditions":
+            conditions_command(load_experiment(args.experiment), args)
         elif args.command == "check":
             do_check(load_experiment(args.experiment), args.only)
         elif args.command == "run":

@@ -10,6 +10,15 @@ from .base import Task
 DEFAULT_ANSWERS = {"yes": ["yes"], "no": ["no"]}
 
 
+# How a column says that a question is negated ("Is there no nodule?"), or that it is not.
+NEGATED = {"1": True, "true": True, "yes": True, "0": False, "false": False, "no": False}
+
+
+def negated_rows(column) -> list[bool | None]:
+    """For each value of a negation column: negated, not negated, or None when it says neither."""
+    return [NEGATED.get(str(value).strip().lower()) for value in column]
+
+
 def is_noise(char: str) -> bool:
     """Punctuation, space or control character, in every language. Also ` and ~, which format text."""
     return unicodedata.category(char)[0] in "PZC" or char in "`~"
@@ -23,6 +32,20 @@ def clean(text: str) -> str:
     while chars and is_noise(chars[-1]):
         chars.pop()
     return "".join(chars)
+
+
+def first_word(text: str) -> str:
+    """The first word of an answer: "Yes, there is a nodule." → "Yes,". Empty for an empty answer."""
+    words = nfc(text).split()
+    return words[0] if words else ""
+
+
+def lists_of(task, rows) -> list[dict]:
+    """The answer lists that read each row: those of its format, those of the task, or yes/no."""
+    if task.answers_by:
+        sets = {name: lists.model_dump() for name, lists in task.answer_sets.items()}
+        return [sets[name] for name in rows[task.answers_by]]
+    return [task.answers.model_dump() if task.answers else DEFAULT_ANSWERS] * len(rows)
 
 
 class YesNoTask(Task):

@@ -84,6 +84,13 @@ class TaskConfig(Block):
     type: Literal["yes_no"]
     template: str | None = None
     answers: Answers | str | None = None  # a path is replaced by its content when read
+    # Several answer formats in one experiment (1/0, A/B, yes/no in each language): one list per
+    # format, and the column that names the format of each row.
+    answer_sets: dict[str, Answers] | None = None
+    answers_by: str | None = None
+    # The column that marks the negated questions (1 or 0). The label stays that of the finding:
+    # a yes to "Is there no nodule?" is counted as saying that there is no nodule.
+    negated: str | None = None
     reader_llm: ReaderLLM | None = None
     contrastive: Contrastive | None = None
 
@@ -91,6 +98,12 @@ class TaskConfig(Block):
     def valid_template(self):
         if self.template:
             check_template(self.template)
+        return self
+
+    @model_validator(mode="after")
+    def answer_sets_with_their_column(self):
+        if bool(self.answer_sets) != bool(self.answers_by):
+            raise ValueError("answer_sets and answers_by go together: the lists, and the column that names the list of each row")
         return self
 
     def columns(self) -> set[str]:
@@ -109,6 +122,11 @@ class ModelConfig(Block):
     revision: str | None = None
     params: dict = {}
     embeddings: bool = False
+    # The card of the model, copied to the run log and the report. It changes no answer.
+    family: str | None = None      # such as "medical contrastive" or "general generative"
+    license: str | None = None     # the licence of the weights
+    gpu: str | None = None         # what it needs, such as "16 GB"
+    validated: str | None = None   # where and when it last passed vlmshift check, such as "L4, 2026-10-06"
 
 
 class Inference(Block):
@@ -163,11 +181,61 @@ class Measure(Block):
     name: str
     compare: str
     split_by: list[str] = []
+    all_pairs: bool = False  # compare every pair of levels, even when the axis has a reference
 
     @model_validator(mode="after")
     def no_common_axis(self):
         if self.compare in self.split_by:
             raise ValueError(f"measure {self.name}: compare and split_by share an axis")
+        return self
+
+
+# What each type of analysis needs to be told.
+ANALYSIS_NEEDS = {
+    "tests": ["compare"], "consistency": ["compare"], "information": ["compare"], "ranking": ["compare"],
+    "interaction": ["axes"], "regression": ["axes"], "variance": ["axes"],
+    "disagreement_shift": ["compare", "across"], "taxonomy": ["compare", "across"],
+    "worst_group": ["by"], "standardized": ["by", "over"], "heterogeneity": ["by", "over"],
+    "pareto": ["by", "compare"], "link": ["target", "of"], "parser": ["by"],
+}
+ANALYSIS_METRICS = ("sens", "spec", "ba", "acc", "f1", "macro_f1", "mcc", "yes_rate")
+
+
+class Analysis(Block):
+    """One further analysis (section 5.6). `type` says which one, the other keys what it compares."""
+
+    type: Literal[
+        "tests", "consistency", "information", "ranking", "interaction", "regression", "variance",
+        "disagreement_shift", "taxonomy", "worst_group", "standardized", "heterogeneity", "pareto", "link", "parser",
+    ]
+    name: str | None = None          # to tell two analyses of the same type apart
+    compare: str | None = None       # the axis whose levels are compared
+    across: str | None = None        # a second controlled axis: does the comparison change along it?
+    axes: list[str] = []             # the axes of an interaction, a regression or a variance split
+    split_by: list[str] = []         # computed apart in each cell of these axes
+    all_pairs: bool = False          # tests, ranking, disagreement_shift: every pair of levels of `compare`
+    by: list[str] = []               # the groups of worst_group, standardized, heterogeneity, pareto
+    over: str | None = None          # the axis standardized over, or whose spread is measured
+    covariates: list[str] = []       # regression: axes adjusted for, without interaction
+    metric: Literal[ANALYSIS_METRICS] = "acc"
+    tail: float = Field(0.1, gt=0, le=1)     # worst_group: the share of the worst groups averaged (CVaR)
+    power: float = Field(0.8, gt=0, lt=1)    # tests: the power of the detectable difference
+    target: str | None = None        # link: a target of the latent probe
+    of: str | None = None            # link: the name of an interaction analysis
+
+    @property
+    def label(self) -> str:
+        return self.name or self.type
+
+    @model_validator(mode="after")
+    def has_what_it_needs(self):
+        if missing := [key for key in ANALYSIS_NEEDS[self.type] if not getattr(self, key)]:
+            raise ValueError(f"analysis {self.label}: type {self.type} needs {missing}")
+        if self.type == "interaction" and len(self.axes) not in (2, 3):
+            raise ValueError(f"analysis {self.label}: an interaction is between 2 or 3 axes, not {len(self.axes)}")
+        used = [*self.axes, *self.by, *self.covariates, *[axis for axis in (self.compare, self.across, self.over) if axis]]
+        if repeated := sorted({axis for axis in used if used.count(axis) > 1} | (set(used) & set(self.split_by))):
+            raise ValueError(f"analysis {self.label}: {repeated} is named twice")
         return self
 
 
@@ -194,6 +262,7 @@ class AnalysisConfig(Root):
     measures: list[Measure] | None = None
     stats: Stats = Field(default_factory=Stats)
     latent: Latent | None = None
+    analyses: list[Analysis] = []
     report: Report = Field(default_factory=Report)
 
     @model_validator(mode="after")
@@ -201,6 +270,9 @@ class AnalysisConfig(Root):
         names = [measure.name for measure in self.measures or []]
         if len(names) != len(set(names)):
             raise ValueError("two measures have the same name")
+        labels = [analysis.label for analysis in self.analyses]
+        if repeated := sorted({label for label in labels if labels.count(label) > 1}):
+            raise ValueError(f"two analyses are called {repeated}: give each a name")
         return self
 
 

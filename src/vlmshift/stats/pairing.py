@@ -1,7 +1,10 @@
-"""Choose the rows of a comparison, and pair the samples of the controlled axes."""
+"""Choose the rows of a comparison: levels, cells, units, and the pairs of the controlled axes."""
 from __future__ import annotations
 
 import pandas as pd
+
+from ..common import VLMShiftError
+from ..config.schema import AxisSettings
 
 
 def pairing_keys(axis: str, experiment) -> list[str] | None:
@@ -26,3 +29,38 @@ def select(cell: pd.DataFrame, axis: str, a: str, b: str, keys, statuses: list[s
     used = lines[lines.groupby(keys)[axis].transform("nunique") == 2]
     excluded = len(compared.drop_duplicates(keys)) - len(used.drop_duplicates(keys))
     return used, excluded
+
+
+def with_unit_codes(lines: pd.DataFrame) -> tuple[pd.DataFrame, int]:
+    """Number the units from 0 to n − 1."""
+    codes, units = pd.factorize(lines["unit"])
+    return lines.assign(u=codes), len(units)
+
+
+def split_cells(lines: pd.DataFrame, split_by: list[str], levels: dict) -> list[tuple]:
+    """Split the rows according to split_by. Return (cell name, rows)."""
+    for axis in split_by:
+        lines = lines[lines[axis].isin(levels[axis])]
+    if not split_by:
+        return [(None, lines)]
+    return [
+        (", ".join(f"{axis}={value}" for axis, value in zip(split_by, values)), cell)
+        for values, cell in lines.groupby(split_by)
+    ]
+
+
+def axis_levels(variants: pd.DataFrame, config, axes: list[str]) -> dict:
+    """Levels kept for each axis. Check that they were really sent to the models.
+
+    We look at the variants, not the results: an interrupted run keeps all its levels.
+    """
+    levels = {}
+    for axis in axes:
+        present = sorted(variants[axis].dropna().unique())
+        settings = config.axes.get(axis, AxisSettings())
+        wanted = [*(settings.levels or present), *([settings.reference] if settings.reference else [])]
+        absent = sorted(set(wanted) - set(present))
+        if absent:
+            raise VLMShiftError(f"Axis {axis}: levels missing from the data: {absent}")
+        levels[axis] = settings.levels or present
+    return levels

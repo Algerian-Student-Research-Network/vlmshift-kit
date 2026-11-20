@@ -107,7 +107,22 @@ def run_path(config: AnalysisConfig) -> Path:
     raise VLMShiftError(f"Run not found: {config.run}")
 
 
+# Keys added after the first version of the files. Left unused, they stay out of the fingerprint:
+# a configuration written before them keeps its fingerprint, so its runs are found again.
+ADDED_KEYS = {"answer_sets", "answers_by", "negated", "analyses", "family", "license", "gpu", "validated", "all_pairs"}
+
+
+def without_unused(value):
+    """The same content, without the added keys that are not used."""
+    if isinstance(value, dict):
+        return {key: without_unused(item) for key, item in value.items()
+                if not (key in ADDED_KEYS and item in (None, False, [], {}))}
+    if isinstance(value, list):
+        return [without_unused(item) for item in value]
+    return value
+
+
 def config_hash(config: Root, *extra: str) -> str:
     """Fingerprint of a configuration, paths excluded (section 7.4)."""
-    content = config.model_dump(exclude={"data", "workspace", "run"})
+    content = without_unused(config.model_dump(exclude={"data", "workspace", "run"}))
     return sha16(canonical([content, *extra]))

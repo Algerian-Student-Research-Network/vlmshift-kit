@@ -50,3 +50,49 @@ def test_links_between_pages_all_work():
             if page not in pages or (anchor and f'id="{anchor}"' not in pages[page]):
                 dead.append(f"{name} -> {target}")
     assert not dead
+
+
+def test_home_says_where_to_run_it():
+    """The site runs nothing: the home page says how to run the tool on a computer, in Colab, or in a container."""
+    home = (DOCS / "index.html").read_text(encoding="utf-8")
+    assert 'id="get-started"' in home
+    assert "colab.research.google.com/github/" in home and "examples/pope_mini/colab.ipynb" in home
+    assert "pip install" in home and "docker run" in home
+    assert "<!--" not in home.split("<body>")[1].replace("<!--SCENE-->", "")  # every placeholder filled
+
+
+def test_med_page_comes_from_its_readme():
+    """The Med guide is written once, in packages/med/README.md; on the site its relative links still lead somewhere."""
+    med = (DOCS / "med.html").read_text(encoding="utf-8")
+    assert 'href="med.html"' in (DOCS / "index.html").read_text(encoding="utf-8")
+    assert "DRAFT TERMS" in med and "replay.py" in med
+    links = re.findall(r'<main.*?</main>', med, re.S)[0]
+    assert not re.findall(r'href="(?!https?://|#|[\w-]+\.html)[^"]*"', links)
+    assert "/blob/main/packages/med/SOURCES.md" in links
+
+
+def test_reference_lists_every_key_the_code_accepts():
+    """The reference page is written from the schemas: each key of the code has a row."""
+    from vlmshift.config.schema import AnalysisConfig, ExperimentConfig, ModelConfig, TaskConfig
+    reference = (DOCS / "reference.html").read_text(encoding="utf-8")
+    for key in ExperimentConfig.model_fields:
+        assert f"<code>{key}" in reference, key
+    for key in AnalysisConfig.model_fields:
+        assert f"<code>{key}" in reference, key
+    for key in ModelConfig.model_fields:
+        assert f"<code>models[].{key}</code>" in reference, key
+    for key in TaskConfig.model_fields:
+        assert f"<code>task.{key}" in reference, key
+
+
+def test_example_report_is_a_real_shareable_run():
+    """The report shown on the site comes from real models and names no folder of a machine."""
+    sys.path.insert(0, str(ROOT / "tools" / "site"))
+    import example_report
+    text = (DOCS / "report-example.html").read_text(encoding="utf-8")
+    assert 'href="report-example.html"' in (DOCS / "index.html").read_text(encoding="utf-8")
+    assert "SYNTHETIC" not in text.upper() and not example_report.LOCAL.search(text)
+    assert "<svg" in text and "clip" in text
+    for local in (r"C:\Users\me","D:/data/x.png", "/home/me/x", "/content/images"):
+        assert example_report.LOCAL.search(local), local
+    assert not example_report.LOCAL.search('xmlns="http://www.w3.org/2000/svg"')

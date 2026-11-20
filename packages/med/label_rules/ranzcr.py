@@ -8,7 +8,7 @@ DEVICES = {
     "endotracheal_tube": ["ETT - Abnormal", "ETT - Borderline", "ETT - Normal"],
     "nasogastric_tube": ["NGT - Abnormal", "NGT - Borderline", "NGT - Incompletely Imaged", "NGT - Normal"],
     "central_venous_catheter": ["CVC - Abnormal", "CVC - Borderline", "CVC - Normal"],
-    "swan_ganz_catheter": ["Swan Ganz Catheter Present"],
+    "swan-ganz_catheter": ["Swan Ganz Catheter Present"],
 }
 COLUMNS = [column for columns in DEVICES.values() for column in columns]
 

@@ -4,11 +4,26 @@ run: runs/to-replace
 
 axes:
   language: {reference: EN}
+  site: {reference: NIH}
+
+report:
+  notice: "Chest X-ray research benchmark. Not a medical device: no number here supports a diagnosis."
 
 # A cell of the paper is a source and a concept: each language shift is measured cell by cell.
 # The sources share few concepts, so they are compared in paper.py (domain × language), not here.
 measures:
   - {name: language, compare: language, split_by: [site, concept]}
+  - {name: language_pairs, compare: language, all_pairs: true}        # every pair of languages, not only against English
+  - {name: language_by_country, compare: language, split_by: [country]}
+
+analyses:
+  - {type: tests, compare: language, all_pairs: true, split_by: [site]}   # McNemar, Cochran's Q, Holm
+  - {type: consistency, compare: language, split_by: [site]}
+  - {type: ranking, compare: language, all_pairs: true, split_by: [site]}
+  - {type: worst_group, by: [site, language], metric: ba}
+  - {type: standardized, by: [site, language], over: concept}
+  - {type: parser, by: [language]}
+  - {type: interaction, name: domain_language, axes: [site, language]}    # experimental
 
 latent:
   targets: [site, label]

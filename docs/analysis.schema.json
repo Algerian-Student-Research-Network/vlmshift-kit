@@ -1,5 +1,175 @@
 {
   "$defs": {
+    "Analysis": {
+      "additionalProperties": false,
+      "description": "One further analysis (section 5.6). `type` says which one, the other keys what it compares.",
+      "properties": {
+        "type": {
+          "enum": [
+            "tests",
+            "consistency",
+            "information",
+            "ranking",
+            "interaction",
+            "regression",
+            "variance",
+            "disagreement_shift",
+            "taxonomy",
+            "worst_group",
+            "standardized",
+            "heterogeneity",
+            "pareto",
+            "link",
+            "parser"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "compare": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Compare"
+        },
+        "across": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Across"
+        },
+        "axes": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Axes",
+          "type": "array"
+        },
+        "split_by": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Split By",
+          "type": "array"
+        },
+        "all_pairs": {
+          "default": false,
+          "title": "All Pairs",
+          "type": "boolean"
+        },
+        "by": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "By",
+          "type": "array"
+        },
+        "over": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Over"
+        },
+        "covariates": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Covariates",
+          "type": "array"
+        },
+        "metric": {
+          "default": "acc",
+          "enum": [
+            "sens",
+            "spec",
+            "ba",
+            "acc",
+            "f1",
+            "macro_f1",
+            "mcc",
+            "yes_rate"
+          ],
+          "title": "Metric",
+          "type": "string"
+        },
+        "tail": {
+          "default": 0.1,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Tail",
+          "type": "number"
+        },
+        "power": {
+          "default": 0.8,
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Power",
+          "type": "number"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target"
+        },
+        "of": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Of"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "Analysis",
+      "type": "object"
+    },
     "AxisSettings": {
       "additionalProperties": false,
       "properties": {
@@ -76,6 +246,11 @@
           },
           "title": "Split By",
           "type": "array"
+        },
+        "all_pairs": {
+          "default": false,
+          "title": "All Pairs",
+          "type": "boolean"
         }
       },
       "required": [
@@ -183,6 +358,14 @@
         }
       ],
       "default": null
+    },
+    "analyses": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Analysis"
+      },
+      "title": "Analyses",
+      "type": "array"
     },
     "report": {
       "$ref": "#/$defs/Report"

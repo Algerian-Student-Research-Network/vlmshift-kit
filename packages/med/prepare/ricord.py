@@ -67,14 +67,14 @@ def prepare(root: Path) -> pd.DataFrame:
             raise LayoutError(f"{root / RAW}: expected one JSON file, found {exports}")
         studies = votes(json.loads(zipped.read(exports[0])))
     stated = {study: labels(given) for study, given in studies.items()}
-    if not any(label["covid19"] != "unknown" for label in stated.values()):
+    if not any(label["opacity"] != "unknown" for label in stated.values()):
         names = sorted({name for given in studies.values() for name in given})
         raise LayoutError(f"{root / RAW}: no study with a known class. Classes found: {names}")
     rows = []
     for path in sorted((root / "ricord").rglob("*.dcm")):
         header = pydicom.dcmread(path, stop_before_pixels=True)
-        label = stated.get(header.StudyInstanceUID, {"covid19": "unknown"})
-        if label["covid19"] == "unknown":
+        label = stated.get(header.StudyInstanceUID, {"opacity": "unknown"})
+        if label["opacity"] == "unknown":
             continue
         png = root / "converted" / "ricord" / f"{header.SOPInstanceUID}.png"
         if not png.exists():

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VLMShift report</title>
+<style>
+:root { color-scheme: light dark; --ink: #1a1a1a; --muted: #5f6368; --line: #d5d8dc; --back: #ffffff; --soft: #f4f5f7; }
+@media (prefers-color-scheme: dark) { :root { --ink: #e8eaed; --muted: #9aa0a6; --line: #3c4043; --back: #17181a; --soft: #222427; } }
+body { margin: 0 auto; padding: 24px 16px 64px; max-width: 1080px; background: var(--back); color: var(--ink);
+       font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+h1 { font-size: 1.7rem; margin: 0 0 12px; } h2 { font-size: 1.25rem; margin: 36px 0 10px; padding-top: 14px; border-top: 1px solid var(--line); }
+nav { margin: 0 0 8px; font-size: 0.92rem; } nav a { margin-right: 14px; white-space: nowrap; }
+a { color: inherit; } a:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+blockquote { margin: 12px 0; padding: 10px 14px; border-left: 4px solid var(--muted); background: var(--soft); }
+blockquote.warning { border-left-color: #b00020; }
+pre { overflow-x: auto; padding: 12px; background: var(--soft); border: 1px solid var(--line); border-radius: 6px;
+      font: 12.5px/1.45 ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
+code { font: 0.9em ui-monospace, Consolas, monospace; background: var(--soft); padding: 1px 4px; border-radius: 3px; }
+figure { margin: 18px 0; overflow-x: auto; } figure svg { max-width: none; background: #ffffff; border: 1px solid var(--line); border-radius: 6px; }
+figcaption { font-size: 0.88rem; color: var(--muted); margin-top: 4px; }
+ul { padding-left: 22px; } li { margin: 3px 0; }
+</style>
+</head>
+<body>
+<nav aria-label="Sections"><a href="#summary">Summary</a><a href="#models">Models</a><a href="#audit">Audit</a><a href="#results-by-measure">Results by measure</a><a href="#further-analyses">Further analyses</a><a href="#latent-space-probe">Latent space probe</a><a href="#reading-the-answers">Reading the answers</a><a href="#coverage-limits">Coverage limits</a><a href="#figures">Figures</a></nav>
+<main>
+<h1>VLMShift report</h1>
+<blockquote>POPE mini: 100 of the 500 images of POPE (Li et al., EMNLP 2023). Published results: reference.csv.</blockquote>
+<blockquote>Research use only. This report describes models on one dataset: it must not be used for diagnosis or for any decision about a person.</blockquote>
+<h2 id="summary">Summary</h2>
+<p>Run <code>5082193f06deec94</code>, analysis <code>129072c3126683b0</code>, 1 model(s), 1800 variants. 17 significant shift(s) out of 36 tested.</p>
+<p><strong>clip</strong></p>
+<ul><li>mode, random to adversarial: the model says yes more often, by 0.098 (likely between 0.062 and 0.135, 100 units).</li><li>mode, random to adversarial: balanced accuracy falls by 0.098 (likely between -0.135 and -0.062, 100 units).</li></ul>
+<p>All the details are in <code>metrics.csv</code>.</p>
+<h2 id="models">Models</h2>
+<pre tabindex="0">model        kind                           id                                 revision     family    license        gpu  validated
+ clip contrastive openai/clip-vit-base-patch32 3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268 not stated not stated not stated not stated</pre>
+<p><strong>Not stated as validated</strong> on the machine of this run: clip. <code>vlmshift check</code> tries a model; write the result in <code>validated</code>.</p>
+<h2 id="audit">Audit</h2>
+<p>1800 samples, from 1 to 1 variants per sample, 0 incomplete.</p>
+<pre tabindex="0">axis       level  n_lines  n_samples  n_units  n_positive  n_negative  n_unknown  positive_rate
+mode adversarial      600        600      100         300         300          0            0.5
+mode     popular      600        600      100         300         300          0            0.5
+mode      random      600        600      100         300         300          0            0.5</pre>
+<p>No column of the dataset has an empty row.</p>
+<h2 id="results-by-measure">Results by measure</h2>
+<ul><li><code>matrix_mode.csv</code>: measure mode</li><li><code>metrics.csv</code>: all the numbers, with intervals and counts</li><li><code>fig_&lt;measure&gt;_ba</code> and <code>fig_&lt;measure&gt;_shifts</code>, in <code>.svg</code> and <code>.pdf</code>: one heatmap and the shifts of each measure</li></ul>
+<h2 id="further-analyses">Further analyses</h2>
+<p>No further analysis declared (the <code>analyses</code> block of analysis.yaml).</p>
+<h2 id="latent-space-probe">Latent space probe</h2>
+<p>No probe computed.</p>
+<h2 id="reading-the-answers">Reading the answers</h2>
+<p>No small LLM declared.</p>
+<h2 id="coverage-limits">Coverage limits</h2>
+<pre tabindex="0">model              level  expected  valid  invalid  error  missing  coverage
+ clip              (all)      1800   1800        0      0        0       1.0
+ clip mode = adversarial       600    600        0      0        0       1.0
+ clip     mode = popular       600    600        0      0        0       1.0
+ clip      mode = random       600    600        0      0        0       1.0</pre>
+<p>0 issue(s) reported: see <code>issues.csv</code>.</p>
+<h2 id="figures">Figures</h2>
+<p>Each cell prints its value and its number of units: the color never carries the meaning alone.</p><figure><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 349.88 160" width="349.88" height="160" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>ba by mode</title>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="16" y="24" font-size="14" text-anchor="start" fill="#1a1a1a" font-weight="bold">ba by mode</text>
+<text x="16" y="42" font-size="10" text-anchor="start" fill="#5f6368">ba by mode, valid answers. Each cell: value, then units.</text>
+<text x="93.38" y="82" font-size="10" text-anchor="middle" fill="#1a1a1a" font-weight="bold">adversarial</text>
+<text x="186.38" y="82" font-size="10" text-anchor="middle" fill="#1a1a1a" font-weight="bold">popular</text>
+<text x="279.38" y="82" font-size="10" text-anchor="middle" fill="#1a1a1a" font-weight="bold">random</text>
+<text x="36.88" y="113" font-size="11" text-anchor="end" fill="#1a1a1a">clip</text>
+<rect x="46.88" y="92" width="91" height="32" fill="#5680b7"/>
+<text x="93.38" y="107" font-size="11" text-anchor="middle" fill="#ffffff" font-weight="bold">0.675</text>
+<text x="93.38" y="119" font-size="8" text-anchor="middle" fill="#ffffff">n=100</text>
+<rect x="139.88" y="92" width="91" height="32" fill="#4574af"/>
+<text x="186.38" y="107" font-size="11" text-anchor="middle" fill="#ffffff" font-weight="bold">0.743</text>
+<text x="186.38" y="119" font-size="8" text-anchor="middle" fill="#ffffff">n=100</text>
+<rect x="232.88" y="92" width="91" height="32" fill="#3e6eac"/>
+<text x="279.38" y="107" font-size="11" text-anchor="middle" fill="#ffffff" font-weight="bold">0.773</text>
+<text x="279.38" y="119" font-size="8" text-anchor="middle" fill="#ffffff">n=100</text>
+</svg>
+<figcaption><code>fig_mode_ba.svg</code>, <code>fig_mode_ba.pdf</code></figcaption></figure><figure><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 672.44 170" width="672.44" height="170" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Shifts of mode</title>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="16" y="24" font-size="14" text-anchor="start" fill="#1a1a1a" font-weight="bold">Shifts of mode</text>
+<text x="16" y="42" font-size="10" text-anchor="start" fill="#5f6368">delta_ba with its corrected interval. * significant.</text>
+<line x1="522.076" y1="86" x2="522.076" y2="136" stroke="#5f6368" stroke-width="1"/>
+<text x="522.076" y="152" font-size="9" text-anchor="middle" fill="#5f6368">0</text>
+<text x="194.804" y="152" font-size="9" text-anchor="middle" fill="#5f6368">-0.14</text>
+<text x="168.44" y="107" font-size="10" text-anchor="end" fill="#1a1a1a">clip: random to adversarial</text>
+<line x1="178.44" y1="103" x2="538.44" y2="103" stroke="#c8ccd0" stroke-width="0.5"/>
+<line x1="194.804" y1="103" x2="372.581" y2="103" stroke="#1a1a1a" stroke-width="1.6"/>
+<rect x="280.693" y="100" width="6" height="6" fill="#1a1a1a"/>
+<text x="546.44" y="107" font-size="10" text-anchor="start" fill="#1a1a1a" font-weight="bold">-0.098 * (n=100)</text>
+<text x="168.44" y="129" font-size="10" text-anchor="end" fill="#1a1a1a">clip: random to popular</text>
+<line x1="178.44" y1="125" x2="538.44" y2="125" stroke="#c8ccd0" stroke-width="0.5"/>
+<line x1="376.622" y1="125" x2="522.076" y2="125" stroke="#1a1a1a" stroke-width="1.6"/>
+<rect x="446.349" y="122" width="6" height="6" fill="#1a1a1a"/>
+<text x="546.44" y="129" font-size="10" text-anchor="start" fill="#1a1a1a">-0.030 (n=100)</text>
+</svg>
+<figcaption><code>fig_mode_shifts.svg</code>, <code>fig_mode_shifts.pdf</code></figcaption></figure>
+</main>
+</body>
+</html>

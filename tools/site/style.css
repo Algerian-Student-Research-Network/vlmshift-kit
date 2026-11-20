@@ -90,6 +90,16 @@ h2 { font-size: 36px; line-height: 1.15; margin: 0; letter-spacing: -.01em; }
 .points { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px 44px; font-size: 19.5px; line-height: 1.5; }
 .points li { padding-left: 18px; border-left: 2px solid var(--a35); }
 
+/* The three ways to run it, on the home page */
+.ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 24px 36px; }
+.way { display: grid; gap: 12px; align-content: start; border-top: 2px solid var(--a35); padding-top: 16px; min-width: 0; }
+.way b { font: 400 28px/1.2 var(--serif); letter-spacing: -.01em; }
+.way span { font-size: 18px; line-height: 1.5; }
+.way pre { margin: 0; background: var(--panel); border: 1px solid var(--a22); border-radius: 8px; padding: 12px 14px; overflow-x: auto; font-size: 13.5px; line-height: 1.55; }
+.way a { font-weight: 500; justify-self: start; }
+a.button { display: inline-block; background: var(--accent); color: var(--on-accent); text-decoration: none; border-radius: 6px; padding: 9px 16px; }
+a.button:hover { filter: brightness(1.08); }
+
 /* File guide */
 .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 14px 32px; font-size: 18px; }
 .legend li { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 12px; align-items: start; }
@@ -176,6 +186,9 @@ button.main { background: var(--accent); border-color: var(--accent); color: var
 .reading table { border-collapse: collapse; width: 100%; font-size: 16.5px; }
 .reading th, .reading td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--a22); }
 .reading thead th { font-weight: 600; background: var(--a12); border-bottom: 1px solid var(--a35); }
+.reading.wide { max-width: 1180px; }
+.keys td:first-child { white-space: nowrap; }
+.keys td { font-size: 15.5px; }
 
 @media (max-width: 640px) {
   .scene.wide { display: none; }

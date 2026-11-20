@@ -41,10 +41,15 @@ class Model:
             raise VLMShiftError(f"{name}: params.batch_size must be a whole number of at least 1, not {self.batch_size}")
         self.model = None
         self.notes: list[str] = []  # what the run log and the report must say about this model
+        self.card: dict = {}  # family, license, gpu, validated: stated in experiment.yaml
 
     def info(self) -> dict:
         """Written to run_log.json."""
-        return {"name": self.name, "id": self.id, "revision": self.revision, "kind": self.kind}
+        return {
+            "name": self.name, "id": self.id, "revision": self.revision, "kind": self.kind,
+            "supports_generation": self.kind == "generative", "supports_scores": self.kind == "contrastive",
+            "supports_embed": self.supports_embed, **self.card,
+        }
 
     def load(self) -> None:
         pass
