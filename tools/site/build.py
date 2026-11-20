@@ -18,6 +18,7 @@ from markdown_it import MarkdownIt
 
 import art
 import file_map
+import reference
 
 HERE = Path(__file__).parent
 DOCS = file_map.ROOT / "docs"
@@ -25,7 +26,7 @@ FONTS = ("family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400"
          "&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap")
 REPO = "https://github.com/Algerian-Student-Research-Network/vlmshift-kit"
 COLAB = "https://colab.research.google.com/github/Algerian-Student-Research-Network/vlmshift-kit/blob/main/examples/pope_mini/colab.ipynb"
-MENU = [("tutorial.html", "Tutorial"), ("files.html", "File guide"), ("documentation.html", "Documentation"), ("med.html", "Med")]
+MENU = [("tutorial.html", "Tutorial"), ("files.html", "File guide"), ("documentation.html", "Documentation"), ("reference.html", "Reference"), ("med.html", "Med")]
 MARKDOWN_PAGES = {
     "tutorial": "Tutorial", "server": "NVIDIA server", "colab": "Colab and Kaggle", "documentation": "Documentation",
     "design": "Design",
@@ -119,6 +120,7 @@ def site() -> dict[Path, str]:
     }
     for name, title in MARKDOWN_PAGES.items():
         pages[name] = page(f"{title} · VLMShift", f"{name}.html", f'<main class="reading">\n{markdown_page(name)}</main>')
+    pages["reference"] = page("Configuration reference · VLMShift", "reference.html", f'<main class="reading wide">\n{reference.page()}</main>')
     for name, (title, source) in OTHER_PAGES.items():
         pages[name] = page(f"{title} · VLMShift", f"{name}.html", f'<main class="reading">\n{markdown_page(name, source)}</main>')
     outputs = {DOCS / f"{name}.html": content for name, content in pages.items()}

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Configuration reference · VLMShift</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="VLMShift. A simple kit for measuring shift in vision-language models.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2032%2032%22%20role%3D%22img%22%20aria-label%3D%22VLMShift%20logo%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20%3E%3Cpath%20d%3D%22M15%2C4%20A10%2C10%200%200%200%2015%2C24%20Z%22%20fill%3D%22%233f7a5c%22/%3E%3Cpath%20d%3D%22M17%2C8%20A10%2C10%200%200%201%2017%2C28%20Z%22%20fill%3D%22%233f7a5c%22%20fill-opacity%3D%22.38%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="top"><a class="brand" href="index.html"><svg viewBox="0 0 32 32" role="img" aria-label="VLMShift logo" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M15,4 A10,10 0 0 0 15,24 Z" fill="var(--accent, #3f7a5c)"/><path d="M17,8 A10,10 0 0 1 17,28 Z" fill="var(--accent, #3f7a5c)" fill-opacity=".38"/></svg><span>VLMShift</span></a><nav aria-label="Site"><a href="tutorial.html">Tutorial</a><a href="files.html">File guide</a><a href="documentation.html">Documentation</a><a href="reference.html" aria-current="page">Reference</a><a href="med.html">Med</a></nav></header>
+<main class="reading wide">
+<h1>Configuration reference</h1>
+<p>Every key the two configuration files accept, with its type, its default and its allowed values. This page is written from the schemas the code exports, so it always matches it: a key that is not here is refused.</p>
+<p>Your editor can check the files as you type and suggest the keys. With the YAML extension of VS Code, write this first line in <code>experiment.yaml</code> (and the same with <code>analysis</code> in <code>analysis.yaml</code>):</p>
+<pre><code># yaml-language-server: $schema=https://raw.githubusercontent.com/Algerian-Student-Research-Network/vlmshift-kit/main/docs/experiment.schema.json</code></pre>
+<p>A path such as <code>models[].revision</code> is the key <code>revision</code> of each entry of the list <code>models</code>; <code>axes.&lt;name&gt;.type</code> is the key <code>type</code> of each axis, under its name.</p>
+<h2 id="experiment">experiment.yaml</h2>
+<p>What to ask, to which models, on which table. Read by import, audit, prepare and run. Explained with examples in the <a href="documentation.html#4-describing-an-experiment-experimentyaml">documentation</a>. JSON Schema: <a href="https://raw.githubusercontent.com/Algerian-Student-Research-Network/vlmshift-kit/main/docs/experiment.schema.json">experiment.schema.json</a>.</p>
+<div class="table"><table class="keys"><thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Default</th><th>Allowed values</th><th>Note</th></tr></thead><tbody>
+<tr><td><code>schema_version</code></td><td>fixed</td><td>yes</td><td></td><td><code>1</code></td><td></td></tr>
+<tr><td><code>data</code></td><td>text or list of text</td><td>yes</td><td></td><td></td><td></td></tr>
+<tr><td><code>workspace</code></td><td>text</td><td></td><td><code>&quot;./workspace&quot;</code></td><td></td><td></td></tr>
+<tr><td><code>roles</code></td><td>object</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>roles.image</code></td><td>text</td><td></td><td><code>&quot;image&quot;</code></td><td></td><td></td></tr>
+<tr><td><code>roles.question</code></td><td>text</td><td></td><td><code>&quot;question&quot;</code></td><td></td><td></td></tr>
+<tr><td><code>roles.label</code></td><td>text</td><td></td><td><code>&quot;label&quot;</code></td><td></td><td></td></tr>
+<tr><td><code>roles.sample_id</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>roles.unit</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>roles.original_id</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>roles.positive_text</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>roles.negative_text</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>axes.&lt;name&gt;</code></td><td>map of name → object</td><td>yes</td><td></td><td></td><td></td></tr>
+<tr><td><code>axes.&lt;name&gt;.type</code></td><td>choice</td><td>yes</td><td></td><td><code>controlled</code>, <code>observed</code></td><td></td></tr>
+<tr><td><code>task</code></td><td>object</td><td>yes</td><td></td><td></td><td></td></tr>
+<tr><td><code>task.type</code></td><td>fixed</td><td>yes</td><td></td><td><code>yes_no</code></td><td></td></tr>
+<tr><td><code>task.template</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>task.answers</code></td><td>object or text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>task.answers.yes</code></td><td>list of text</td><td>yes</td><td></td><td></td><td></td></tr>
+<tr><td><code>task.answers.no</code></td><td>list of text</td><td>yes</td><td></td><td></td><td></td></tr>
+<tr><td><code>task.answer_sets.&lt;name&gt;</code></td><td>map of name → object</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>task.answer_sets.&lt;name&gt;.yes</code></td><td>list of text</td><td>yes</td><td></td><td></td><td></td></tr>
+<tr><td><code>task.answer_sets.&lt;name&gt;.no</code></td><td>list of text</td><td>yes</td><td></td><td></td><td></td></tr>
+<tr><td><code>task.answers_by</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>task.negated</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>task.reader_llm</code></td><td>object</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>task.reader_llm.model</code></td><td>text</td><td>yes</td><td></td><td></td><td></td></tr>
+<tr><td><code>task.reader_llm.revision</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>task.reader_llm.validation</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>task.contrastive</code></td><td>object</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>task.contrastive.positive_template</code></td><td>text</td><td>yes</td><td></td><td></td><td></td></tr>
+<tr><td><code>task.contrastive.negative_template</code></td><td>text</td><td>yes</td><td></td><td></td><td></td></tr>
+<tr><td><code>models[]</code></td><td>list of object</td><td>yes</td><td></td><td></td><td></td></tr>
+<tr><td><code>models[].name</code></td><td>text</td><td>yes</td><td></td><td></td><td></td></tr>
+<tr><td><code>models[].adapter</code></td><td>text</td><td>yes</td><td></td><td></td><td></td></tr>
+<tr><td><code>models[].id</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>models[].revision</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>models[].params</code></td><td>object</td><td></td><td><code>{}</code></td><td></td><td></td></tr>
+<tr><td><code>models[].embeddings</code></td><td>true / false</td><td></td><td><code>false</code></td><td></td><td></td></tr>
+<tr><td><code>models[].family</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>models[].license</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>models[].gpu</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>models[].validated</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>inference</code></td><td>object</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>inference.temperature</code></td><td>number</td><td></td><td><code>0</code></td><td></td><td></td></tr>
+<tr><td><code>inference.max_new_tokens</code></td><td>integer</td><td></td><td><code>16</code></td><td></td><td></td></tr>
+<tr><td><code>inference.retries</code></td><td>integer</td><td></td><td><code>2</code></td><td></td><td></td></tr>
+</tbody></table></div>
+<h2 id="analysis">analysis.yaml</h2>
+<p>What to compute on a run. Read by analyze; it never calls a model. Explained with examples in the <a href="documentation.html#8-describing-an-analysis-analysisyaml">documentation</a>. JSON Schema: <a href="https://raw.githubusercontent.com/Algerian-Student-Research-Network/vlmshift-kit/main/docs/analysis.schema.json">analysis.schema.json</a>.</p>
+<div class="table"><table class="keys"><thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Default</th><th>Allowed values</th><th>Note</th></tr></thead><tbody>
+<tr><td><code>schema_version</code></td><td>fixed</td><td>yes</td><td></td><td><code>1</code></td><td></td></tr>
+<tr><td><code>run</code></td><td>text</td><td>yes</td><td></td><td></td><td></td></tr>
+<tr><td><code>axes.&lt;name&gt;</code></td><td>map of name → object</td><td></td><td><code>{}</code></td><td></td><td></td></tr>
+<tr><td><code>axes.&lt;name&gt;.reference</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>axes.&lt;name&gt;.levels</code></td><td>list of text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>measures[]</code></td><td>list of object</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>measures[].name</code></td><td>text</td><td>yes</td><td></td><td></td><td></td></tr>
+<tr><td><code>measures[].compare</code></td><td>text</td><td>yes</td><td></td><td></td><td></td></tr>
+<tr><td><code>measures[].split_by</code></td><td>list of text</td><td></td><td><code>[]</code></td><td></td><td></td></tr>
+<tr><td><code>measures[].all_pairs</code></td><td>true / false</td><td></td><td><code>false</code></td><td></td><td></td></tr>
+<tr><td><code>stats</code></td><td>object</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>stats.bootstrap</code></td><td>integer</td><td></td><td><code>2000</code></td><td></td><td></td></tr>
+<tr><td><code>stats.alpha</code></td><td>number</td><td></td><td><code>0.05</code></td><td></td><td></td></tr>
+<tr><td><code>stats.seed</code></td><td>integer</td><td></td><td><code>0</code></td><td></td><td></td></tr>
+<tr><td><code>stats.min_units</code></td><td>integer</td><td></td><td><code>30</code></td><td></td><td></td></tr>
+<tr><td><code>latent</code></td><td>object</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>latent.targets</code></td><td>list of text</td><td>yes</td><td></td><td></td><td></td></tr>
+<tr><td><code>latent.folds</code></td><td>integer</td><td></td><td><code>5</code></td><td></td><td></td></tr>
+<tr><td><code>analyses[]</code></td><td>list of object</td><td></td><td><code>[]</code></td><td></td><td>One further analysis (section 5.6). `type` says which one, the other keys what it compares.</td></tr>
+<tr><td><code>analyses[].type</code></td><td>choice</td><td>yes</td><td></td><td><code>tests</code>, <code>consistency</code>, <code>information</code>, <code>ranking</code>, <code>interaction</code>, <code>regression</code>, <code>variance</code>, <code>disagreement_shift</code>, <code>taxonomy</code>, <code>worst_group</code>, <code>standardized</code>, <code>heterogeneity</code>, <code>pareto</code>, <code>link</code>, <code>parser</code></td><td></td></tr>
+<tr><td><code>analyses[].name</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>analyses[].compare</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>analyses[].across</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>analyses[].axes</code></td><td>list of text</td><td></td><td><code>[]</code></td><td></td><td></td></tr>
+<tr><td><code>analyses[].split_by</code></td><td>list of text</td><td></td><td><code>[]</code></td><td></td><td></td></tr>
+<tr><td><code>analyses[].all_pairs</code></td><td>true / false</td><td></td><td><code>false</code></td><td></td><td></td></tr>
+<tr><td><code>analyses[].by</code></td><td>list of text</td><td></td><td><code>[]</code></td><td></td><td></td></tr>
+<tr><td><code>analyses[].over</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>analyses[].covariates</code></td><td>list of text</td><td></td><td><code>[]</code></td><td></td><td></td></tr>
+<tr><td><code>analyses[].metric</code></td><td>choice</td><td></td><td><code>&quot;acc&quot;</code></td><td><code>sens</code>, <code>spec</code>, <code>ba</code>, <code>acc</code>, <code>f1</code>, <code>macro_f1</code>, <code>mcc</code>, <code>yes_rate</code></td><td></td></tr>
+<tr><td><code>analyses[].tail</code></td><td>number</td><td></td><td><code>0.1</code></td><td></td><td></td></tr>
+<tr><td><code>analyses[].power</code></td><td>number</td><td></td><td><code>0.8</code></td><td></td><td></td></tr>
+<tr><td><code>analyses[].target</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>analyses[].of</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>report</code></td><td>object</td><td></td><td></td><td></td><td></td></tr>
+<tr><td><code>report.notice</code></td><td>text</td><td></td><td></td><td></td><td></td></tr>
+</tbody></table></div>
+</main>
+</body>
+</html>

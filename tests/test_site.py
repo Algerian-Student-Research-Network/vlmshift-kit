@@ -69,3 +69,17 @@ def test_med_page_comes_from_its_readme():
     links = re.findall(r'<main.*?</main>', med, re.S)[0]
     assert not re.findall(r'href="(?!https?://|#|[\w-]+\.html)[^"]*"', links)
     assert "/blob/main/packages/med/SOURCES.md" in links
+
+
+def test_reference_lists_every_key_the_code_accepts():
+    """The reference page is written from the schemas: each key of the code has a row."""
+    from vlmshift.config.schema import AnalysisConfig, ExperimentConfig, ModelConfig, TaskConfig
+    reference = (DOCS / "reference.html").read_text(encoding="utf-8")
+    for key in ExperimentConfig.model_fields:
+        assert f"<code>{key}" in reference, key
+    for key in AnalysisConfig.model_fields:
+        assert f"<code>{key}" in reference, key
+    for key in ModelConfig.model_fields:
+        assert f"<code>models[].{key}</code>" in reference, key
+    for key in TaskConfig.model_fields:
+        assert f"<code>task.{key}" in reference, key

@@ -186,6 +186,9 @@ button.main { background: var(--accent); border-color: var(--accent); color: var
 .reading table { border-collapse: collapse; width: 100%; font-size: 16.5px; }
 .reading th, .reading td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--a22); }
 .reading thead th { font-weight: 600; background: var(--a12); border-bottom: 1px solid var(--a35); }
+.reading.wide { max-width: 1180px; }
+.keys td:first-child { white-space: nowrap; }
+.keys td { font-size: 15.5px; }
 
 @media (max-width: 640px) {
   .scene.wide { display: none; }
