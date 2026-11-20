@@ -23,6 +23,8 @@ HERE = Path(__file__).parent
 DOCS = file_map.ROOT / "docs"
 FONTS = ("family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400"
          "&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap")
+REPO = "https://github.com/Algerian-Student-Research-Network/vlmshift-kit"
+COLAB = "https://colab.research.google.com/github/Algerian-Student-Research-Network/vlmshift-kit/blob/main/examples/pope_mini/colab.ipynb"
 MENU = [("tutorial.html", "Tutorial"), ("files.html", "File guide"), ("documentation.html", "Documentation")]
 MARKDOWN_PAGES = {
     "tutorial": "Tutorial", "server": "NVIDIA server", "colab": "Colab and Kaggle", "documentation": "Documentation",
@@ -79,7 +81,7 @@ def markdown_page(name: str) -> str:
 def home() -> str:
     body = (HERE / "home.html").read_text(encoding="utf-8")
     return (
-        body.replace("<!--TAGLINE-->", art.TAGLINE)
+        body.replace("<!--TAGLINE-->", art.TAGLINE).replace("<!--REPO-->", REPO).replace("<!--COLAB-->", COLAB)
         .replace("<!--SCENE-->", art.scene('class="scene wide"') + art.scene('class="scene narrow"', compact=True))
     )
 

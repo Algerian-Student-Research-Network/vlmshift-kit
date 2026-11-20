@@ -50,3 +50,12 @@ def test_links_between_pages_all_work():
             if page not in pages or (anchor and f'id="{anchor}"' not in pages[page]):
                 dead.append(f"{name} -> {target}")
     assert not dead
+
+
+def test_home_says_where_to_run_it():
+    """The site runs nothing: the home page says how to run the tool on a computer, in Colab, or in a container."""
+    home = (DOCS / "index.html").read_text(encoding="utf-8")
+    assert 'id="get-started"' in home
+    assert "colab.research.google.com/github/" in home and "examples/pope_mini/colab.ipynb" in home
+    assert "pip install" in home and "docker run" in home
+    assert "<!--" not in home.split("<body>")[1].replace("<!--SCENE-->", "")  # every placeholder filled
