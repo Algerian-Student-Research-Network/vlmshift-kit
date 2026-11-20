@@ -5,7 +5,7 @@
     python tools/site/build.py --home-fragment page.html    also writes the home page without its <html> shell
 
 Tutorial, server guide, Colab guide, documentation and design are written in Markdown, so they also read
-well on GitHub. Here they become pages of the site. The file guide comes from file_map.py.
+well on GitHub. Here they become pages of the site, with the guide of the Med package (packages/med/README.md). The file guide comes from file_map.py.
 """
 import argparse
 import json
@@ -25,11 +25,13 @@ FONTS = ("family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400"
          "&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap")
 REPO = "https://github.com/Algerian-Student-Research-Network/vlmshift-kit"
 COLAB = "https://colab.research.google.com/github/Algerian-Student-Research-Network/vlmshift-kit/blob/main/examples/pope_mini/colab.ipynb"
-MENU = [("tutorial.html", "Tutorial"), ("files.html", "File guide"), ("documentation.html", "Documentation")]
+MENU = [("tutorial.html", "Tutorial"), ("files.html", "File guide"), ("documentation.html", "Documentation"), ("med.html", "Med")]
 MARKDOWN_PAGES = {
     "tutorial": "Tutorial", "server": "NVIDIA server", "colab": "Colab and Kaggle", "documentation": "Documentation",
     "design": "Design",
 }
+# Pages written next to their code: the Med package keeps its guide in its own folder, read on GitHub too.
+OTHER_PAGES = {"med": ("Med package", file_map.ROOT / "packages" / "med" / "README.md")}
 
 
 def head(title: str) -> str:
@@ -66,10 +68,25 @@ def slug(text: str) -> str:
     return re.sub(r"[^\w\- ]", "", text.lower()).strip().replace(" ", "-")
 
 
-def markdown_page(name: str) -> str:
-    """A Markdown file as a page: anchors on titles, wide tables that scroll, links between pages."""
+def repository_link(source: Path, target: str) -> str:
+    """A link of a Markdown file outside docs/: a page of the site if it is one, else the file on GitHub."""
+    path, _, anchor = target.partition("#")
+    full = (source.parent / path).resolve()
+    anchor = f"#{anchor}" if anchor else ""
+    if full.parent == DOCS.resolve() and full.suffix == ".md":
+        return f"{full.stem}.html{anchor}"
+    return f"{REPO}/blob/main/{full.relative_to(file_map.ROOT.resolve()).as_posix()}{anchor}"
+
+
+def markdown_page(name: str, source: Path | None = None) -> str:
+    """A Markdown file as a page: anchors on titles, wide tables that scroll, links between pages.
+    A file outside docs/ (source) keeps its relative links working: they lead to the site or to GitHub."""
     parser = MarkdownIt("commonmark", {"html": True}).enable("table")
-    tokens = parser.parse((DOCS / f"{name}.md").read_text(encoding="utf-8"))
+    tokens = parser.parse((source or DOCS / f"{name}.md").read_text(encoding="utf-8"))
+    for child in (child for token in tokens if source for child in token.children or []):
+        href = child.attrGet("href") if child.type == "link_open" else None
+        if href and not href.startswith(("http", "#", "mailto:")):
+            child.attrSet("href", repository_link(source, href))
     for token, following in zip(tokens, tokens[1:]):
         if token.type == "heading_open":
             token.attrSet("id", slug(following.content))
@@ -102,6 +119,8 @@ def site() -> dict[Path, str]:
     }
     for name, title in MARKDOWN_PAGES.items():
         pages[name] = page(f"{title} · VLMShift", f"{name}.html", f'<main class="reading">\n{markdown_page(name)}</main>')
+    for name, (title, source) in OTHER_PAGES.items():
+        pages[name] = page(f"{title} · VLMShift", f"{name}.html", f'<main class="reading">\n{markdown_page(name, source)}</main>')
     outputs = {DOCS / f"{name}.html": content for name, content in pages.items()}
     outputs[art.ASSETS / "style.css"] = (HERE / "style.css").read_text(encoding="utf-8")
     outputs[DOCS / ".nojekyll"] = ""  # GitHub Pages serves these pages as they are

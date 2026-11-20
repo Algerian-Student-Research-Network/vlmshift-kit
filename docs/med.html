@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Med package · VLMShift</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="VLMShift. A simple kit for measuring shift in vision-language models.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2032%2032%22%20role%3D%22img%22%20aria-label%3D%22VLMShift%20logo%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20%3E%3Cpath%20d%3D%22M15%2C4%20A10%2C10%200%200%200%2015%2C24%20Z%22%20fill%3D%22%233f7a5c%22/%3E%3Cpath%20d%3D%22M17%2C8%20A10%2C10%200%200%201%2017%2C28%20Z%22%20fill%3D%22%233f7a5c%22%20fill-opacity%3D%22.38%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="top"><a class="brand" href="index.html"><svg viewBox="0 0 32 32" role="img" aria-label="VLMShift logo" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M15,4 A10,10 0 0 0 15,24 Z" fill="var(--accent, #3f7a5c)"/><path d="M17,8 A10,10 0 0 1 17,28 Z" fill="var(--accent, #3f7a5c)" fill-opacity=".38"/></svg><span>VLMShift</span></a><nav aria-label="Site"><a href="tutorial.html">Tutorial</a><a href="files.html">File guide</a><a href="documentation.html">Documentation</a><a href="med.html" aria-current="page">Med</a></nav></header>
+<main class="reading">
+<h1 id="med-package">Med package</h1>
+<p>Medical image benchmark built on VLMShift: does the language of the question change the decisions of medical vision-language models, across chest X-ray domains? It only uses the interfaces of Core.</p>
+<blockquote>
+<p>Research benchmark. It is not a medical device: no number it gives supports a diagnosis.</p>
+</blockquote>
+<ul>
+<li><strong>35 concepts</strong> of the paper, <code>normal</code> included, with their RadLex identifier, in <strong>7 languages</strong>: English, French, Spanish, Hindi, Chinese, Arabic, German (<a href="https://github.com/Algerian-Student-Research-Network/vlmshift-kit/blob/main/packages/med/configs/questions.yaml">configs/questions.yaml</a>). English is the reference.</li>
+<li><strong>The wordings of the paper</strong>: the canonical question, two paraphrases, the negated question, the pairs of sentences for contrastive models, four answer formats, and the questions in Latin letters (<a href="https://github.com/Algerian-Student-Research-Network/vlmshift-kit/blob/main/packages/med/configs/romanized.yaml">configs/romanized.yaml</a>). Nothing is reconstructed: a test rebuilds the 1,493 distinct questions of the October 2026 runs from these two files.</li>
+<li><strong>11 sources</strong> of chest X-rays, from North America, Europe, Asia, Africa and Oceania (<a href="https://github.com/Algerian-Student-Research-Network/vlmshift-kit/blob/main/packages/med/SOURCES.md">SOURCES.md</a>).</li>
+<li><strong>10 models</strong>, each pinned to a commit (<a href="https://github.com/Algerian-Student-Research-Network/vlmshift-kit/blob/main/packages/med/configs/experiment.yaml">configs/experiment.yaml</a>). The 5 generative ones answer in the format asked; anything else is INVALID, never NO. The 5 contrastive ones compare the image with a positive and a negative sentence.</li>
+</ul>
+<h2 id="the-terms-are-drafts">The terms are drafts</h2>
+<p>Each concept of <code>questions.yaml</code> has a <code>status</code>. The terms were drafted for the paper and no clinician who speaks each language has reviewed them yet, so all say <code>needs_validation</code>. While one does, <code>paper.py</code> and <code>replay.py</code> refuse to run and say why. With <code>--allow-unvalidated</code> they run, and the report opens with <strong>DRAFT TERMS</strong>. Once a concept is reviewed, set its <code>status</code> to <code>validated</code> and write who and when in <code>reviewed</code>.</p>
+<h2 id="three-ways-to-run-it">Three ways to run it</h2>
+<p><strong>The sample of the paper.</strong> The study froze what it sent to the models in two evaluation plans. They name patients and images of sources that cannot be shared again, so they are not in this repository. Copy <code>eval_plan_core.csv</code> and <code>eval_plan_core_supp.csv</code> (folder <code>manifests/</code> of the drive of the study) to <code>data/paper/</code>, then:</p>
+<pre><code class="language-bash">cd packages/med
+export PYTHONPATH=.
+python plans.py                       # one experiment per arm, in data/paper/arms/
+python paper.py data/paper/arms/main/experiment.yaml data/paper/arms/main/analysis.yaml --allow-unvalidated
+</code></pre>
+<p><code>plans.py</code> writes each text again from the bank and compares it with the plan: one difference stops everything. The plans give the path of each image on the machine of the study; <code>data/paper/image_roots.json</code> says where these folders are on yours, such as <code>{&quot;/content/images/NIH&quot;: &quot;D:/nih&quot;}</code>.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Arm (<a href="https://github.com/Algerian-Student-Research-Network/vlmshift-kit/blob/main/packages/med/configs/arms.yaml">configs/arms.yaml</a>)</th>
+<th>What changes</th>
+<th>Questions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>main</code></td>
+<td>The language, on 11 sources</td>
+<td>513 × 7 languages</td>
+</tr>
+<tr>
+<td><code>formats</code></td>
+<td>The answer format: YES/NO, 1/0, A/B</td>
+<td>228 × 7 × 3</td>
+</tr>
+<tr>
+<td><code>negation</code></td>
+<td>The plain question and its negation, answered by 1/0</td>
+<td>513 negated, 228 paired</td>
+</tr>
+<tr>
+<td><code>controls</code></td>
+<td>The image: blank, another patient, cropped border, standardized contrast, another site with the same label</td>
+<td>80 × 7 × 6</td>
+</tr>
+<tr>
+<td><code>quality</code></td>
+<td>The image blurred or noised at five severities</td>
+<td>80 × 3 × 11</td>
+</tr>
+<tr>
+<td><code>factorial</code></td>
+<td>The sentence and the term each in English or another language</td>
+<td>200 × 19</td>
+</tr>
+<tr>
+<td><code>permutation</code></td>
+<td>A concept that is not that of the image</td>
+<td>228 × 7 × 2</td>
+</tr>
+<tr>
+<td><code>transliteration</code></td>
+<td>Hindi, Chinese and Arabic in their script and in Latin letters</td>
+<td>228 × 3 × 2</td>
+</tr>
+</tbody>
+</table></div>
+<p>All arms share one workspace: a question asked in one arm is not asked again in another.</p>
+<p><strong>The numbers of the paper, without a GPU.</strong> The study kept every answer of every model. Copy the files <code>pred__&lt;model&gt;__core.csv</code> and <code>pred__&lt;model&gt;__core_supp.csv</code> (folder <code>preds/by_model/</code>) to <code>data/paper/preds/</code>, then:</p>
+<pre><code class="language-bash">python replay.py main factorial --allow-unvalidated
+</code></pre>
+<p><code>replay.py</code> puts the recorded answers where a run would have written them and runs the analysis and the report on them. It reads no image. Replayed on the supplementary run of CLIP ViT-L/14 and LLaVA-Med, it gives the frame, term and interaction effects of table 11 of the paper: -0.077, -0.074, 0.088 and -0.018, -0.018, 0.012.</p>
+<p><strong>From the public sources.</strong> <code>run.sh</code> prepares the 11 sources from their raw files, 300 patients each with one image, half with a positive label when there are enough, and runs the benchmark:</p>
+<pre><code class="language-bash">MED_DATA=/path/to/the/data bash packages/med/run.sh --allow-unvalidated
+</code></pre>
+<p>This is a new sample, not the one of the paper, and the raw files do not carry everything the annotated workbook of the study does: for JSRT, the public file names only say whether there is a nodule, while the paper asks about lung cancer, granuloma and hamartoma.</p>
+<h2 id="what-is-written">What is written</h2>
+<p>Core writes its report in <code>runs/&lt;run&gt;/analyses/&lt;analysis&gt;/report/</code> (see the <a href="documentation.html">documentation</a>). <code>paper.py</code> adds the tables of the paper in <code>runs/&lt;run&gt;/paper/</code>:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>models.csv</code></td>
+<td>Per model: accuracy, F1, balanced accuracy, range between its best and worst language</td>
+</tr>
+<tr>
+<td><code>languages.csv</code></td>
+<td>Per language: accuracy and its gap with English, with a 95% interval from 10,000 paired draws; the same for balanced accuracy</td>
+</tr>
+<tr>
+<td><code>domain_language.csv</code></td>
+<td>Accuracy per source and language</td>
+</tr>
+<tr>
+<td><code>rankings.csv</code></td>
+<td>Kendall τ between the model rankings of two languages, in each source</td>
+</tr>
+<tr>
+<td><code>matched_cells.csv</code>, <code>cells.csv</code></td>
+<td>The cells kept by the complete-case rule, and every number per cell</td>
+</tr>
+</tbody>
+</table></div>
+<p>Only the cells where every model has an answer in every language are compared. Balanced accuracy has its own core: the cells with both classes. To rewrite the tables of a finished run without any model: <code>python paper.py --run &lt;run folder&gt;</code>.</p>
+<p>Two audits of the paper are in <code>audits.py</code>: <code>python audits.py congruence &lt;analysis folder&gt;</code> gives the shift from English to the language of the country (Spanish in Spain, Chinese in China), and <code>python audits.py semantic &lt;workbook.csv&gt;</code> counts the distinct texts of each language column of the annotated workbook, which shows that these columns carry report details.</p>
+<h2 id="data">Data</h2>
+<p>The data is not in this repository, and must never be: each user asks for it at its source and accepts its licence. <a href="https://github.com/Algerian-Student-Research-Network/vlmshift-kit/blob/main/packages/med/SOURCES.md">SOURCES.md</a> says, for each source, where to ask, how, which file was used and how to cite it. <a href="https://github.com/Algerian-Student-Research-Network/vlmshift-kit/blob/main/packages/med/references.bib">references.bib</a> gathers the citations.</p>
+<p><code>python check.py configs/experiment.yaml</code> says what is missing and where to get it, and warns when a raw file is not the version of the benchmark. Only the code, the cards and the aggregated results go online: <code>packages/med/data/</code> and <code>workspace/</code> are ignored by git.</p>
+<p>The CheXzero weights are not on Hugging Face: put <code>best_64_5e-05_original_22000_0.864.pt</code>, from the folder linked by github.com/rajpurkarlab/CheXzero, in <code>data/weights/chexzero/</code>.</p>
+<h2 id="labels">Labels</h2>
+<p>Each source codes its labels in its own way: <code>label_rules/&lt;source&gt;.py</code> turns that code into positive, negative or unknown, for the concepts of the paper and with the label policy the paper gives to that source:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Policy</th>
+<th>Sources</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Classes that exclude each other</td>
+<td>Montgomery, Shenzhen, TB Pakistan, Bangladesh, Nigeria</td>
+<td>Positive for the class of the image, negative for the others. A class outside the paper (COVID-19 in Nigeria) is unknown</td>
+</tr>
+<tr>
+<td>Exhaustive findings</td>
+<td>NIH, RANZCR</td>
+<td>A finding or device not listed is negative. NIH labels were mined from reports: negative means &quot;not reported&quot;</td>
+</tr>
+<tr>
+<td>Positives, and normal studies</td>
+<td>PadChest-GR</td>
+<td>A reported finding is positive. A normal study is negative for everything else. In an abnormal study, what is not reported is unknown</td>
+</tr>
+<tr>
+<td>Positives only</td>
+<td>PTX-498</td>
+<td>No negative: accuracy but no balanced accuracy</td>
+</tr>
+<tr>
+<td>Votes</td>
+<td>RICORD</td>
+<td>Typical, indeterminate and atypical appearances are lung opacity; &quot;negative for pneumonia&quot; is its absence; a tie is unknown</td>
+</tr>
+</tbody>
+</table></div>
+<p>Unknown is never turned into negative, and unknown is never asked. The docstring of each rule gives its choices.</p>
+<h2 id="add-a-source">Add a source</h2>
+<ol>
+<li>Copy <code>prepare/template.py</code> and <code>label_rules/template.py</code> under the name of the source.</li>
+<li>Adapt <code>RAW</code>, <code>SOURCE</code> (its card: name and version, page, access, steps, licence, BibTeX), <code>prepare()</code> and the label rule.</li>
+<li>Put the raw file in place and run <code>python check.py configs/experiment.yaml</code>: it gives the SHA-256 to write in <code>SOURCE</code>.</li>
+<li>Add its table to <code>data:</code> in <code>configs/experiment.yaml</code>, its country to <code>COUNTRIES</code> in <code>prepare/common.py</code>, and its concepts to <code>configs/questions.yaml</code>.</li>
+<li>Run <code>python cite.py</code>: it writes <code>SOURCES.md</code> and <code>references.bib</code> from the cards.</li>
+</ol>
+</main>
+</body>
+</html>

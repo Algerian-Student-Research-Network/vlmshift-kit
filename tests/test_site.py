@@ -59,3 +59,13 @@ def test_home_says_where_to_run_it():
     assert "colab.research.google.com/github/" in home and "examples/pope_mini/colab.ipynb" in home
     assert "pip install" in home and "docker run" in home
     assert "<!--" not in home.split("<body>")[1].replace("<!--SCENE-->", "")  # every placeholder filled
+
+
+def test_med_page_comes_from_its_readme():
+    """The Med guide is written once, in packages/med/README.md; on the site its relative links still lead somewhere."""
+    med = (DOCS / "med.html").read_text(encoding="utf-8")
+    assert 'href="med.html"' in (DOCS / "index.html").read_text(encoding="utf-8")
+    assert "DRAFT TERMS" in med and "replay.py" in med
+    links = re.findall(r'<main.*?</main>', med, re.S)[0]
+    assert not re.findall(r'href="(?!https?://|#|[\w-]+\.html)[^"]*"', links)
+    assert "/blob/main/packages/med/SOURCES.md" in links
